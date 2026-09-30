@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Coach Basket">
+<title>Coach Basket — Générateur d'entraînements</title>
+<style>
+  :root {
+    --encre: #14213D;
+    --ballon: #FC7A1E;
+    --parquet: #F2E3C6;
+    --craie: #FBF9F4;
+    --filet: #3E6259;
+    --ligne: rgba(20,33,61,.14);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html { -webkit-text-size-adjust:100%; }
+  body {
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    background: var(--craie);
+    color: var(--encre);
+    padding-bottom: calc(74px + env(safe-area-inset-bottom));
+    min-height: 100vh;
+  }
+  h1,h2,h3,.disp {
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* ---------- entête ---------- */
+  header {
+    background: var(--encre);
+    color: var(--craie);
+    padding: calc(18px + env(safe-area-inset-top)) 20px 20px;
+    border-bottom: 5px solid var(--ballon);
+  }
+  header .sur { font-size:13px; opacity:.75; margin-bottom:2px; }
+  header h1 { font-size:26px; font-weight:800; }
+  header h1 em { font-style:normal; color:var(--ballon); }
+
+  /* ---------- navigation ---------- */
+  nav {
+    position: fixed; bottom:0; left:0; right:0; z-index:50;
+    display:flex;
+    background: var(--encre);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav button {
+    flex:1; padding:14px 4px 12px;
+    background:none; border:none;
+    color: rgba(251,249,244,.55);
+    font-size:12px; font-weight:600;
+    font-family:inherit;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    cursor:pointer;
+  }
+  nav button svg { width:24px; height:24px; }
+  nav button.actif { color: var(--ballon); }
+
+  main { padding: 20px 16px 30px; max-width:560px; margin:0 auto; }
+  .ecran { display:none; }
+  .ecran.actif { display:block; }
+
+  /* ---------- réglages ---------- */
+  .champ { margin-bottom:22px; }
+  .champ > label { display:block; font-weight:700; font-size:15px; margin-bottom:9px; }
+  .champ .note { font-size:13px; color:rgba(20,33,61,.6); margin-top:7px; line-height:1.45; }
+  .pilules { display:flex; flex-wrap:wrap; gap:8px; }
+  .pilules button {
+    padding:10px 16px; border-radius:999px;
+    border:1.5px solid var(--ligne);
+    background:#fff; color:var(--encre);
+    font-size:15px; font-weight:600; font-family:inherit;
+    cursor:pointer;
+  }
+  .pilules button.sel {
+    background: var(--encre); color:var(--craie); border-color:var(--encre);
+  }
+  .btn-principal {
+    width:100%; padding:16px;
+    background: var(--ballon); color:#fff;
+    border:none; border-radius:14px;
+    font-size:17px; font-weight:800; font-family:inherit;
+    cursor:pointer;
+    box-shadow: 0 3px 0 #d95f08;
+  }
+  .btn-principal:active { transform: translateY(2px); box-shadow:none; }
+  .btn-second {
+    width:100%; padding:13px; margin-top:10px;
+    background:none; color:var(--encre);
+    border:1.5px solid var(--ligne); border-radius:14px;
+    font-size:15px; font-weight:700; font-family:inherit; cursor:pointer;
+  }
+
+  /* ---------- semaine ---------- */
+  .jour-carte {
+    background:#fff; border:1px solid var(--ligne);
+    border-left:5px solid var(--ballon);
+    border-radius:12px; padding:16px; margin-bottom:12px;
+    cursor:pointer;
+  }
+  .jour-carte .quand { font-size:13px; font-weight:700; color:var(--ballon); margin-bottom:3px; }
+  .jour-carte h3 { font-size:18px; margin-bottom:5px; }
+  .jour-carte .themes { font-size:13.5px; color:rgba(20,33,61,.65); line-height:1.5; }
+
+  /* ---------- séance ---------- */
+  .seance-tete { margin-bottom:18px; }
+  .seance-tete .quand { font-size:14px; font-weight:700; color:var(--ballon); }
+  .seance-tete h2 { font-size:24px; margin:3px 0 5px; }
+  .seance-tete .meta { font-size:14px; color:rgba(20,33,61,.6); }
+  .bloc {
+    background:#fff; border:1px solid var(--ligne);
+    border-radius:12px; margin-bottom:12px; overflow:hidden;
+  }
+  .bloc-tete {
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    padding:13px 15px;
+    background: var(--parquet);
+  }
+  .bloc-tete h3 { font-size:16px; }
+  .bloc-tete .duree { font-size:13.5px; font-weight:800; white-space:nowrap; }
+  .exo { padding:13px 15px; border-top:1px solid var(--ligne); }
+  .exo h4 { font-size:15px; margin-bottom:4px; display:flex; justify-content:space-between; gap:8px; }
+  .exo h4 span { font-weight:600; color:var(--ballon); font-size:13.5px; white-space:nowrap; }
+  .exo p { font-size:14px; line-height:1.5; color:rgba(20,33,61,.78); }
+  .exo .adapt { margin-top:6px; font-size:13px; color:var(--filet); line-height:1.45; }
+  .exo .adapt b { font-weight:700; }
+  .vide {
+    text-align:center; padding:50px 20px; color:rgba(20,33,61,.55);
+    font-size:15px; line-height:1.6;
+  }
+  .vide .ball { font-size:44px; margin-bottom:12px; }
+  .avert {
+    background:#fff; border:1px solid var(--ligne); border-radius:12px;
+    padding:13px 15px; margin-bottom:14px;
+    font-size:13.5px; line-height:1.5; color:rgba(20,33,61,.75);
+  }
+  .avert b { color:var(--encre); }
+  .install {
+    margin-top:26px; padding:15px; border-radius:12px;
+    background: var(--parquet); font-size:13.5px; line-height:1.55;
+  }
+  .install b { display:block; margin-bottom:4px; font-size:14px; }
+
+  /* ---------- bouton animation ---------- */
+  .btn-anim {
+    margin-top:10px; display:inline-flex; align-items:center; gap:7px;
+    padding:8px 14px 8px 10px; border-radius:999px;
+    background: var(--encre); color: var(--craie);
+    border:none; font-family:inherit; font-size:13.5px; font-weight:700; cursor:pointer;
+  }
+  .btn-anim svg { width:16px; height:16px; fill: var(--ballon); }
+  .btn-anim:active { transform: scale(.97); }
+  button:focus-visible, input:focus-visible { outline:3px solid var(--ballon); outline-offset:2px; }
+
+  /* ---------- bibliothèque ---------- */
+  .bibli-intro { font-size:14px; line-height:1.5; color:rgba(20,33,61,.7); margin-bottom:18px; }
+  .bibli-groupe { margin-bottom:22px; }
+  .bibli-groupe h2 { font-size:17px; margin-bottom:8px; padding-left:10px; border-left:4px solid var(--ballon); }
+  .bibli-groupe ul { list-style:none; background:#fff; border:1px solid var(--ligne); border-radius:12px; overflow:hidden; }
+  .bibli-groupe li + li { border-top:1px solid var(--ligne); }
+  .bibli-ligne {
+    width:100%; display:flex; align-items:center; gap:12px; text-align:left;
+    padding:12px 14px; background:none; border:none; font-family:inherit; color:var(--encre); cursor:pointer;
+  }
+  .bibli-ligne:active { background: var(--parquet); }
+  .bibli-play { flex:none; width:32px; height:32px; border-radius:50%; background:var(--encre); display:grid; place-items:center; }
+  .bibli-play svg { width:15px; height:15px; fill:var(--ballon); margin-left:2px; }
+  .bibli-nom { flex:1; font-size:15px; font-weight:650; line-height:1.3; }
+  .bibli-nom small { display:block; font-size:12px; font-weight:500; color:rgba(20,33,61,.55); margin-top:2px; }
+  .bibli-duree { flex:none; font-size:13px; font-weight:700; color:var(--ballon); }
+
+  /* ---------- lecteur d'animation ---------- */
+  body.lecteur-ouvert { overflow:hidden; }
+  .lecteur {
+    position:fixed; inset:0; z-index:100;
+    background: rgba(20,33,61,0); transition: background .22s;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .lecteur.visible { background: rgba(20,33,61,.55); }
+  .lecteur[hidden] { display:none; }
+  .lect-carte {
+    width:100%; max-width:560px; max-height:94vh; overflow-y:auto;
+    background: var(--craie); border-radius:20px 20px 0 0;
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+    transform: translateY(100%); transition: transform .26s cubic-bezier(.2,.8,.2,1);
+  }
+  .lecteur.visible .lect-carte { transform:none; }
+  .lect-tete { display:flex; align-items:flex-start; gap:12px; margin-bottom:12px; }
+  .lect-tete > div { flex:1; }
+  .lect-theme { font-size:13px; font-weight:700; color:var(--ballon); }
+  .lect-tete h2 { font-size:21px; line-height:1.2; margin-top:2px; }
+  .lect-fermer {
+    flex:none; width:40px; height:40px; border-radius:50%;
+    border:1.5px solid var(--ligne); background:#fff; color:var(--encre);
+    font-size:22px; line-height:1; cursor:pointer; font-family:inherit;
+  }
+  .lect-scene {
+    position:relative; border-radius:14px; overflow:hidden;
+    background: var(--encre); border-bottom:4px solid var(--ballon);
+  }
+  #lect-svg { display:block; width:100%; height:auto; max-height:52vh; }
+  .lect-legende {
+    position:absolute; left:10px; right:10px; bottom:10px;
+    background: rgba(20,33,61,.92); color: var(--craie);
+    padding:9px 12px; border-radius:10px;
+    font-size:14.5px; font-weight:700; line-height:1.3;
+  }
+  .lect-legende.anime { animation: legende .35s ease-out; }
+  @keyframes legende { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform:none; } }
+  .lect-tableau {
+    position:absolute; top:10px; right:10px;
+    background: var(--ballon); color:#fff; font-weight:800; font-size:13px;
+    padding:5px 10px; border-radius:999px;
+  }
+  .lect-barre-fond { height:4px; background: rgba(20,33,61,.12); border-radius:2px; margin-top:12px; overflow:hidden; }
+  .lect-barre { height:100%; background: var(--ballon); transform-origin:left; transform:scaleX(0); }
+  .lect-ctrl { display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .lect-ctrl input[type=range] { flex:1; accent-color: var(--ballon); height:28px; }
+  .lect-rond {
+    flex:none; width:44px; height:44px; border-radius:50%; border:none; cursor:pointer;
+    display:grid; place-items:center;
+  }
+  #lect-play { background: var(--ballon); color:#fff; }
+  #lect-rejouer { background:#fff; border:1.5px solid var(--ligne); color:var(--encre); }
+  .lect-rond svg { width:20px; height:20px; }
+  #lect-play .ic-pause, #lect-play.en-lecture .ic-play { display:none; }
+  #lect-play.en-lecture .ic-pause { display:block; }
+  .lect-vitesse {
+    flex:none; padding:0 12px; height:36px; border-radius:999px;
+    border:1.5px solid var(--ligne); background:#fff; color:var(--encre);
+    font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  .lect-vitesse[aria-pressed=true] { background: var(--encre); color: var(--craie); border-color: var(--encre); }
+  .lect-roles { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:12px; font-size:12.5px; color:rgba(20,33,61,.7); }
+  .lect-roles span { display:inline-flex; align-items:center; gap:6px; }
+  .lect-roles i { width:12px; height:12px; border-radius:50%; display:inline-block; }
+  .lect-accel { font-size:12px; color:rgba(20,33,61,.55); margin-top:6px; }
+  .lect-etapes { list-style:none; margin-top:14px; counter-reset:e; }
+  .lect-etapes button {
+    width:100%; display:flex; align-items:center; gap:10px; text-align:left;
+    padding:8px 10px; border-radius:10px; border:none; background:none;
+    font-family:inherit; font-size:14px; color:rgba(20,33,61,.7); cursor:pointer;
+  }
+  .lect-etapes .num {
+    flex:none; width:22px; height:22px; border-radius:50%;
+    display:grid; place-items:center; font-size:12px; font-weight:800;
+    background: rgba(20,33,61,.08); color:var(--encre);
+  }
+  .lect-etapes button.actif { background:#fff; color:var(--encre); font-weight:700; box-shadow: inset 0 0 0 1.5px var(--ligne); }
+  .lect-etapes button.actif .num { background: var(--ballon); color:#fff; }
+  .lect-desc { font-size:14px; line-height:1.55; color:rgba(20,33,61,.8); margin-top:14px; }
+  .lect-coach { margin-top:8px; font-size:13.5px; color:var(--filet); line-height:1.5; }
+
+  /* terrain animé */
+  .c-sol { fill:#E9CFA0; }
+  .c-sol2 { fill:#EDD5A8; }
+  .c-l { fill:none; stroke:#FBF9F4; stroke-width:.08; }
+  .c-raq { fill:#3E6259; fill-opacity:.55; stroke:#FBF9F4; stroke-width:.08; }
+  .c-panneau { stroke:#14213D; stroke-width:.14; stroke-linecap:round; }
+  .c-cercle { fill:none; stroke:#FC7A1E; stroke-width:.09; }
+  .c-swish { fill:none; stroke:#FC7A1E; stroke-width:.1; }
+  .trace { fill:none; stroke-width:.07; stroke-dasharray:.22 .18; stroke-linecap:round; stroke-linejoin:round; }
+  .trace-att { stroke:#B8520C; opacity:.5; }
+  .trace-def { stroke:#14213D; opacity:.4; }
+  .j-att { fill:#FC7A1E; stroke:#FBF9F4; stroke-width:.07; }
+  .j-def { fill:#14213D; stroke:#FBF9F4; stroke-width:.07; }
+  .j-coach { fill:#3E6259; stroke:#FBF9F4; stroke-width:.07; }
+  .j-txt { fill:#fff; font:800 .44px -apple-system,"Helvetica Neue",Arial,sans-serif; text-anchor:middle; dominant-baseline:central; }
+  .j-ombre { fill:#14213D; }
+  .j-souffle { fill:none; stroke:#3E6259; stroke-width:.07; }
+  .j-corde { fill:none; stroke:#14213D; stroke-width:.06; stroke-dasharray:.7 .25; }
+  .b-cuir { fill:#C4570F; stroke:#14213D; stroke-width:.03; }
+  .b-coutures { fill:none; stroke:#14213D; stroke-width:.025; }
+  .b-ombre { fill:#14213D; }
+  .d-plot { fill:#FC7A1E; stroke:#FBF9F4; stroke-width:.05; }
+  .d-txt { fill:#14213D; font:700 .42px -apple-system,"Helvetica Neue",Arial,sans-serif; text-anchor:middle; }
+  .d-txt-station { font-size:.5px; }
+  .d-station { fill:#FBF9F4; fill-opacity:.35; stroke:#14213D; stroke-opacity:.35; stroke-width:.06; stroke-dasharray:.25 .15; }
+  .d-cerceau { fill:none; stroke:#3E6259; stroke-width:.1; }
+  .d-latte { fill:#14213D; }
+  .d-haie { fill:#FBF9F4; stroke:#14213D; stroke-width:.05; }
+  .d-haie-pied { fill:#14213D; }
+  .d-eau { fill:#5B8FB9; fill-opacity:.55; }
+  .d-banc { fill:#8A5A2B; stroke:#14213D; stroke-width:.05; }
+  .d-marque { stroke:#14213D; stroke-width:.1; }
+  .d-repere { stroke:#FC7A1E; stroke-width:.1; stroke-dasharray:.3 .2; }
+  /* scène respiration */
+  .s-fond { fill:#14213D; }
+  .s-guide { fill:none; stroke:#FBF9F4; stroke-opacity:.25; stroke-width:.04; stroke-dasharray:.2 .15; }
+  .s-guide2 { stroke-dasharray:none; }
+  .s-bulle { fill:#3E6259; stroke:#FC7A1E; stroke-width:.08; }
+  .s-compte { fill:#FBF9F4; font:800 1.1px -apple-system,"Helvetica Neue",Arial,sans-serif; text-anchor:middle; dominant-baseline:central; }
+  .s-sol { stroke:#FBF9F4; stroke-opacity:.3; stroke-width:.05; }
+  .s-fig { color:#FBF9F4; stroke:#FBF9F4; stroke-width:.3; stroke-linecap:round; stroke-linejoin:round; fill:none; }
+  circle.s-fig { fill:#FBF9F4; stroke:none; }
+  .s-coeur { fill:#FC7A1E; }
+  .s-bpm { fill:#FBF9F4; font:800 .55px -apple-system,"Helvetica Neue",Arial,sans-serif; dominant-baseline:central; }
+  .s-bpm.ok { fill:#9BD1B5; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lecteur, .lect-carte { transition:none; }
+    .lect-legende.anime { animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="sur" id="entete-sous">Générateur d'entraînements</div>
+  <h1>Coach <em>Basket</em></h1>
+</header>
+
+<main>
+
+  <!-- ================= SEMAINE ================= -->
+  <section class="ecran actif" id="ecran-semaine">
+    <div id="contenu-semaine"></div>
+  </section>
+
+  <!-- ================= SÉANCE ================= -->
+  <section class="ecran" id="ecran-seance">
+    <div id="contenu-seance"></div>
+  </section>
+
+  <!-- ================= EXERCICES ================= -->
+  <section class="ecran" id="ecran-exos">
+    <div id="contenu-exos"></div>
+  </section>
+
+  <!-- ================= RÉGLAGES ================= -->
+  <section class="ecran" id="ecran-reglages">
+
+    <div class="champ">
+      <label>Catégorie</label>
+      <div class="pilules" id="pil-cat"></div>
+      <div class="note" id="note-cat"></div>
+    </div>
+
+    <div class="champ">
+      <label>Séances par semaine</label>
+      <div class="pilules" id="pil-nb"></div>
+    </div>
+
+    <div class="champ">
+      <label>Durée d'une séance</label>
+      <div class="pilules" id="pil-duree"></div>
+    </div>
+
+    <div class="champ">
+      <label>Effectif approximatif</label>
+      <div class="pilules" id="pil-effectif"></div>
+    </div>
+
+    <button class="btn-principal" onclick="genererSemaine()">Générer la semaine d'entraînement</button>
+    <button class="btn-second" onclick="genererSemaine(true)">Régénérer avec d'autres exercices</button>
+
+    <div class="install">
+      <b>Installer sur ton iPhone</b>
+      Ouvre cette page dans Safari, touche le bouton Partager, puis « Sur l'écran d'accueil ». L'app s'ouvrira en plein écran avec sa propre icône.
+    </div>
+  </section>
+
+</main>
+
+<nav>
+  <button id="nav-semaine" class="actif" onclick="montrer('semaine')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+    Semaine
+  </button>
+  <button id="nav-seance" onclick="montrer('seance')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3.5 8.5c5 3 12 3 17 0M3.5 15.5c5-3 12-3 17 0M12 3v18"/></svg>
+    Séance
+  </button>
+  <button id="nav-exos" onclick="montrer('exos')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M10 9v6l5-3z" fill="currentColor"/></svg>
+    Exercices
+  </button>
+  <button id="nav-reglages" onclick="montrer('reglages')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3h.1a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5h.1a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+    Réglages
+  </button>
+</nav>
+
+<div id="lecteur" class="lecteur" role="dialog" aria-modal="true" aria-labelledby="lect-titre" hidden>
+  <div class="lect-carte">
+    <div class="lect-tete">
+      <div><div class="lect-theme" id="lect-theme"></div><h2 id="lect-titre"></h2></div>
+      <button class="lect-fermer" id="lect-fermer" aria-label="Fermer l'animation">×</button>
+    </div>
+    <div class="lect-scene">
+      <svg id="lect-svg" role="img" aria-label="Schéma animé de l'exercice sur le terrain"></svg>
+      <div class="lect-tableau" id="lect-tableau" aria-hidden="true" hidden></div>
+      <div class="lect-legende" id="lect-legende" aria-hidden="true"></div>
+    </div>
+    <div class="lect-barre-fond" aria-hidden="true"><div class="lect-barre" id="lect-barre"></div></div>
+    <div class="lect-ctrl">
+      <button class="lect-rond" id="lect-play" aria-label="Lire l'animation">
+        <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
+        <svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>
+      </button>
+      <button class="lect-rond" id="lect-rejouer" aria-label="Revoir depuis le début">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg>
+      </button>
+      <input type="range" id="lect-temps" min="0" max="1000" value="0" aria-label="Position dans l'animation">
+      <button class="lect-vitesse" id="lect-vitesse" aria-pressed="false">Vitesse normale</button>
+    </div>
+    <div class="lect-roles" id="lect-legende-roles">
+      <span><i style="background:#FC7A1E"></i>Attaquante</span>
+      <span><i style="background:#14213D"></i>Défenseure</span>
+      <span><i style="background:#3E6259;border-radius:3px"></i>Coach ou passeuse</span>
+      <span><i style="background:#C4570F;width:9px;height:9px"></i>Ballon</span>
+    </div>
+    <p class="lect-accel" id="lect-accel">Durées accélérées pour tenir en quelques secondes. Les pointillés montrent les déplacements.</p>
+    <ol class="lect-etapes" id="lect-etapes" aria-label="Étapes de l'exercice"></ol>
+    <p class="lect-desc" id="lect-desc"></p>
+    <p class="lect-coach" id="lect-coach"></p>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   DONNÉES : catégories, intensités, banque d'exercices
+   ===================================================================== */
+
+const CATEGORIES = ["U9","U11","U13","U15","U18","Seniors"];
+
+const PROFILS_AGE = {
+  U9:  { plio:"ludique", note:"Avant 10 ans : pas de pliométrie structurée. On travaille le saut sous forme de jeux (marelle, sauts de rivière). Séances courtes, tout en jeu.", coursMax:8 },
+  U11: { plio:"ludique", note:"Pliométrie uniquement ludique (cordes à sauter, parcours). Priorité à la motricité et à la coordination.", coursMax:10 },
+  U13: { plio:"faible", note:"Introduction de pliométrie à faible impact (sauts bipodaux, faible hauteur). Volume de course modéré, croissance en cours.", coursMax:15 },
+  U15: { plio:"moderee", note:"Pliométrie modérée possible : haies basses, bonds horizontaux, réception maîtrisée avant tout. Attention aux pics de croissance (Osgood-Schlatter fréquent chez les filles de cet âge) — réduire les sauts si douleurs aux genoux.", coursMax:20 },
+  U18: { plio:"complete", note:"Pliométrie complète possible si les fondations sont acquises (gainage, réceptions propres).", coursMax:25 },
+  Seniors: { plio:"complete", note:"Travail complet selon le niveau physique du groupe.", coursMax:30 }
+};
+
+/* Chaque exercice : nom, description, durée en minutes, niveau plio requis
+   éventuel, et adaptations par âge */
+const BANQUE = {
+
+  echauffement: [
+    { n:"Toro échauffement", d:"Cercles de 5-6 joueuses, 2 au milieu. Passes rapides à une touche, les défenseures cherchent l'interception. Active les mains et la lecture sans forcer.", t:10 },
+    { n:"Gammes + ballon", d:"Montées de genoux, talons-fesses, pas chassés, accélérations progressives sur la largeur du terrain, chacune avec son ballon en dribble.", t:10 },
+    { n:"Dribble follow-the-leader", d:"Par deux, une meneuse impose ses changements de rythme et de main, l'autre reproduit. On échange toutes les 45 secondes.", t:10 },
+    { n:"Passe et suit en mouvement", d:"3 colonnes, passe et on suit son ballon. On enchaîne passes directes, à terre, puis passes après un dribble. Rythme croissant.", t:10 }
+  ],
+
+  pliometrie: [
+    { n:"Parcours sauts ludique", plio:"ludique", t:12,
+      d:"Cerceaux, rivière à franchir, lattes au sol : sauts pieds joints, cloche-pied, réceptions équilibrées. Sous forme de relais par équipes.",
+      a:"Aucune hauteur, aucune charge. Le jeu prime : on compte les points par équipe." },
+    { n:"Corde à sauter", plio:"ludique", t:8,
+      d:"Blocs de 30 secondes de saut / 30 secondes de repos. Variantes : pieds joints, alterné, un pied. 6 à 8 blocs.",
+      a:"Excellent pour la coordination et les chevilles à tout âge." },
+    { n:"Sauts bipodaux lattes basses", plio:"faible", t:10,
+      d:"Séries de 6 sauts pieds joints par-dessus des lattes ou mini-haies (10-15 cm). Consigne clé : réception silencieuse, genoux alignés. 4 séries, repos complet entre les séries.",
+      a:"U13 : rester à 3 séries. La qualité de réception passe avant la hauteur." },
+    { n:"Bonds horizontaux", plio:"moderee", t:10,
+      d:"3 bonds enchaînés pieds joints vers l'avant, stabilisation 2 secondes sur la dernière réception. 5 passages. Puis version cloche-pied sur distance courte.",
+      a:"U15 : surveiller l'alignement des genoux à la réception (valgus fréquent chez les joueuses) — c'est LE point technique de prévention des blessures." },
+    { n:"Haies basses + sprint", plio:"moderee", t:12,
+      d:"4 haies basses (20-30 cm), sauts pieds joints enchaînés puis sprint 10 m. 6 passages, retour en marchant.",
+      a:"U15 : haies à 20 cm max. Arrêter la série si les réceptions se dégradent." },
+    { n:"Drop jumps + rebond", plio:"complete", t:12,
+      d:"Descente d'un banc (30-40 cm), réception puis saut vertical immédiat en touchant la planche ou le filet. 4 séries de 5. Repos 90 secondes.",
+      a:"Réservé aux joueuses sans douleur de croissance, techniques de réception acquises." },
+    { n:"Sauts d'appel spécifiques basket", plio:"moderee", t:10,
+      d:"Enchaînement course - appel deux pieds - saut vers le cercle (simuler la prise de rebond), puis appel un pied (simuler le double-pas). 8 répétitions de chaque.",
+      a:"Fait le lien direct entre la pliométrie et le jeu : rebond, contre, lay-up." }
+  ],
+
+  course: [
+    { n:"Fartlek sur terrain", t:12,
+      d:"En continu autour du terrain : 1 minute allure facile / 30 secondes allure soutenue. L'intensité se règle à la voix. Durée totale selon l'âge.",
+      a:"U15 : 10-12 minutes suffisent. On construit l'aérobie progressivement sur la saison." },
+    { n:"Navettes progressives", t:10,
+      d:"Ligne de fond → ligne des lancers francs → retour → milieu → retour → ligne des lancers opposée → retour → fond opposé → retour. 4 à 6 répétitions, récupération 45 secondes.",
+      a:"Chronométrer une fois par mois pour montrer la progression aux filles — très motivant." },
+    { n:"Intermittent 15/15", t:10,
+      d:"15 secondes de course à intensité élevée / 15 secondes de marche. 2 blocs de 5 minutes, 2 minutes entre les blocs.",
+      a:"U13-U15 : commencer par un seul bloc les premières semaines." },
+    { n:"Relais navettes par équipes", t:10,
+      d:"2 ou 3 équipes, relais en navette avec ballon (dribble aller, passe au retour). La dimension collective fait oublier l'effort.",
+      a:"Format à privilégier chez les plus jeunes : même charge de course, zéro lassitude." },
+    { n:"Défense en glissade + replis", t:8,
+      d:"Glissades défensives en zigzag sur demi-terrain puis sprint de repli. 6 passages. Travaille la résistance spécifique basket.",
+      a:"Insister sur la posture : fesses basses, dos droit, on ne croise jamais les pieds." }
+  ],
+
+  respiration: [
+    { n:"Respiration en cohérence", t:5,
+      d:"Assises ou allongées : inspiration 5 secondes par le nez, expiration 5 secondes par la bouche. 3 à 5 minutes. Idéal en fin de séance ou avant les lancers francs.",
+      a:"Expliquer le pourquoi : redescendre le rythme cardiaque pour mieux tirer sous pression." },
+    { n:"Routine lancer franc + souffle", t:8,
+      d:"Sur la ligne : une grande expiration avant chaque tir, routine identique à chaque fois (dribbles, regard cercle, souffle, tir). 2 lancers puis on tourne.",
+      a:"C'est ici que la respiration devient une arme de match. À répéter chaque semaine." },
+    { n:"Respiration après effort", t:5,
+      d:"Juste après un exercice intense : mains sur la tête, inspirations nasales profondes, on chronomètre le temps pour revenir sous 120 bpm (prise de pouls 15 secondes × 4).",
+      a:"Apprend aux joueuses à gérer leur récupération pendant les temps morts." },
+    { n:"Gainage + respiration contrôlée", t:8,
+      d:"Planche, planche latérale : 3 × 30 secondes de chaque en expirant lentement, sans bloquer le souffle.",
+      a:"Le gainage respiré protège le dos et prépare la pliométrie." }
+  ],
+
+  tir: [
+    { n:"Gamme de tir près du cercle", t:12,
+      d:"Forme du tir à une main à 1 mètre du cercle : coude sous le ballon, extension complète, poignet cassé, le ballon roule sur les doigts. 20 tirs de chaque côté, puis on recule d'un pas.",
+      a:"La base absolue. Chez les U15, corriger surtout le coude qui s'écarte et le tir à deux mains." },
+    { n:"Tir en sortie de dribble", t:12,
+      d:"Dribble, arrêt simultané ou alternatif, tir. 5 positions autour de la raquette, 8 tirs par position. On compte les réussites.",
+      a:"Insister sur l'équilibre à l'arrêt : les pieds orientés vers le cercle avant de monter le ballon." },
+    { n:"Catch and shoot", t:10,
+      d:"Par deux : une passeuse, une tireuse qui se déplace de spot en spot, réception-tir immédiat. 2 minutes puis on inverse.",
+      a:"Réception basse, ballon dans la « pochette » de tir, pas de temps mort entre la passe et le tir." },
+    { n:"Concours de lancers francs par équipes", t:10,
+      d:"2 équipes, chaque joueuse tire 2 lancers, on cumule. L'équipe perdante a un petit gage. Simule la pression du match.",
+      a:"Combiner avec la routine respiration : c'est le moment de l'appliquer." },
+    { n:"Tir après écran simulé", t:12,
+      d:"Plot = écran. Course, frotter l'écran, réception, tir. Variantes : tir direct, une feinte + un dribble.",
+      a:"U15 : bon pont entre la gestuelle pure et le tir en situation de jeu." },
+    { n:"Double-pas des deux mains", t:10,
+      d:"Colonnes à 45°, double-pas main droite côté droit, main gauche côté gauche. Puis avec une défenseure passive.",
+      a:"Le côté gauche doit être travaillé chaque semaine — c'est ce qui différencie les joueuses à ce niveau." }
+  ],
+
+  collectif: [
+    { n:"3 contre 3 demi-terrain", t:15,
+      d:"Règles à thème : minimum 3 passes avant de tirer, ou obligation de jouer une passe et va. Rotation rapide des équipes.",
+      a:"Le 3×3 est le meilleur format d'apprentissage : plus de ballons touchés, plus de décisions par joueuse." },
+    { n:"Passe et va / passe et suit", t:12,
+      d:"5 joueuses en mouvement continu sur demi-terrain, enchaînement passe et va vers le cercle. Puis version avec défense passive.",
+      a:"Le fondement du jeu collectif : on ne reste jamais immobile après sa passe." },
+    { n:"Montée de balle 2-0 / 3-0 → 3-2", t:15,
+      d:"Montées à vide pour fixer les couloirs (une au milieu, deux en aile), puis surnombre 3 contre 2 avec finition.",
+      a:"Consigne clé : la balle avance par la passe, pas par le dribble." },
+    { n:"5 contre 5 à thèmes", t:18,
+      d:"Match avec contraintes évolutives : défense tout terrain, ou panier valable seulement après un rebond offensif, ou interdiction de dribbler dans la zone avant.",
+      a:"Choisir UN thème par séance, celui travaillé plus tôt dans la séance." },
+    { n:"Jeu de transition 11", t:15,
+      d:"Vagues de 3 attaquantes contre 2 défenseures, les défenseures repartent en attaque avec une nouvelle joueuse. Jeu continu, très cardio.",
+      a:"Combine résistance à l'effort et prise de décision — parfait en fin de séance." },
+    { n:"Défense d'aide en 4 contre 4", t:12,
+      d:"Shell drill : 4 attaquantes fixes qui font tourner la balle, 4 défenseures qui ajustent position d'aide à chaque passe. Puis on libère le jeu.",
+      a:"U15 : la découverte des principes d'aide change complètement la qualité défensive d'équipe." }
+  ],
+
+  poste: [
+    { n:"Ateliers par poste — extérieures", t:15,
+      d:"Meneuses/arrières/ailières : dribble sous pression (2 ballons, tête haute), départs en dribble après feinte, lecture passe-tir-drive sur fermeture de la défenseure.",
+      a:"Faire verbaliser la lecture : « qu'est-ce que tu as vu ? pourquoi ce choix ? »" },
+    { n:"Ateliers par poste — intérieures", t:15,
+      d:"Postes bas : réception dos au cercle, pivots effacés et engagés, crochet, power move. Travail du rebond : écran retard, conquête à deux mains.",
+      a:"Même les équipes jeunes gagnent des matchs sur le rebond — à travailler chaque semaine." },
+    { n:"1 contre 1 avec contrainte", t:12,
+      d:"Départ ligne des 3 points, 4 dribbles maximum pour conclure. Version extérieure (face au cercle) et intérieure (dos au cercle, réception poste bas).",
+      a:"Limiter les dribbles force le jeu vers le cercle et les feintes." },
+    { n:"Circuit individuel 4 stations", t:16,
+      d:"4 stations de 4 minutes : ball-handling, finitions variées, tir en sortie de dribble, jeu au poste. Groupes par poste, rotation au signal.",
+      a:"Format efficace avec un grand effectif : tout le monde travaille en même temps." },
+    { n:"Jeu à deux : pick and roll initiation", t:14,
+      d:"Par deux, porteuse + poseuse d'écran : lecture des deux options (la porteuse attaque / l'écranteuse roule vers le cercle). D'abord sans défense, puis contre défense passive.",
+      a:"U15 : introduction simple, deux lectures seulement. Ne pas complexifier." }
+  ],
+
+  retour: [
+    { n:"Étirements dirigés + bilan", t:5,
+      d:"Étirements légers des principales chaînes (quadriceps, ischio-jambiers, mollets, épaules) pendant un bilan verbal collectif : qu'a-t-on appris aujourd'hui ?", },
+    { n:"Lancers francs au calme + rangement", t:5,
+      d:"2 lancers francs chacune dans le calme complet, en appliquant la routine respiration, pendant que le matériel se range." }
+  ]
+};
+
+/* =====================================================================
+   MODÈLES DE SEMAINE : répartition des thèmes selon le nb de séances
+   ===================================================================== */
+
+const MODELES = {
+  1: [ { titre:"Séance complète", themes:["pliometrie","tir","collectif"] } ],
+  2: [ { titre:"Physique + technique", themes:["pliometrie","course","tir"] },
+       { titre:"Technique + jeu", themes:["tir","poste","collectif"] } ],
+  3: [ { titre:"Physique + adresse", themes:["pliometrie","course","tir"] },
+       { titre:"Individuel par poste", themes:["poste","tir","respiration"] },
+       { titre:"Jeu collectif", themes:["course","collectif","collectif"] } ],
+  4: [ { titre:"Physique", themes:["pliometrie","course","respiration"] },
+       { titre:"Adresse et gestuelle", themes:["tir","tir","respiration"] },
+       { titre:"Individuel par poste", themes:["poste","poste","tir"] },
+       { titre:"Jeu collectif", themes:["collectif","collectif","course"] } ],
+  5: [ { titre:"Physique", themes:["pliometrie","course","respiration"] },
+       { titre:"Adresse et gestuelle", themes:["tir","tir","respiration"] },
+       { titre:"Individuel par poste", themes:["poste","poste","tir"] },
+       { titre:"Jeu collectif", themes:["collectif","collectif","course"] },
+       { titre:"Séance légère + jeu", themes:["respiration","tir","collectif"] } ]
+};
+
+const NOMS_THEMES = {
+  echauffement:"Échauffement", pliometrie:"Pliométrie", course:"Course et résistance",
+  respiration:"Respiration", tir:"Gestuelle de tir", collectif:"Jeu collectif",
+  poste:"Jeu individuel par poste", retour:"Retour au calme"
+};
+
+/* =====================================================================
+   ÉTAT + STOCKAGE
+   ===================================================================== */
+
+let etat = {
+  cat:"U15", nb:2, duree:90, effectif:"10-12",
+  semaine:null, seanceOuverte:0
+};
+
+async function sauver() {
+  const donnees = JSON.stringify(etat);
+  try { localStorage.setItem("coach-basket-etat", donnees); return; } catch(e) {}
+  try { if (window.storage) await window.storage.set("coach-basket-etat", donnees); } catch(e) {}
+}
+async function charger() {
+  try {
+    const v = localStorage.getItem("coach-basket-etat");
+    if (v) { etat = Object.assign(etat, JSON.parse(v)); return; }
+  } catch(e) {}
+  try {
+    if (window.storage) {
+      const r = await window.storage.get("coach-basket-etat");
+      if (r && r.value) etat = Object.assign(etat, JSON.parse(r.value));
+    }
+  } catch(e) { /* première ouverture : rien à charger */ }
+}
+
+/* =====================================================================
+   GÉNÉRATION
+   ===================================================================== */
+
+function tirer(liste, deja) {
+  const dispo = liste.filter(x => !deja.has(x.n));
+  const source = dispo.length ? dispo : liste;
+  const x = source[Math.floor(Math.random()*source.length)];
+  deja.add(x.n);
+  return x;
+}
+
+function nivPlioOk(ex, profil) {
+  if (!ex.plio) return true;
+  const ordre = ["ludique","faible","moderee","complete"];
+  return ordre.indexOf(ex.plio) <= ordre.indexOf(profil.plio);
+}
+
+function genererSemaine(regen) {
+  const profil = PROFILS_AGE[etat.cat];
+  const modele = MODELES[Math.min(etat.nb,5)];
+  const deja = new Set();
+  const dispoTravail = etat.duree - 15; // échauffement 10 + retour 5
+
+  etat.semaine = modele.map(m => {
+    const blocs = [];
+    blocs.push({ theme:"echauffement", exos:[tirer(BANQUE.echauffement, deja)] });
+
+    // répartir le temps de travail entre les thèmes du modèle
+    const parTheme = Math.floor(dispoTravail / m.themes.length);
+    m.themes.forEach(th => {
+      let liste = BANQUE[th];
+      if (th === "pliometrie") liste = liste.filter(e => nivPlioOk(e, profil));
+      if (th === "course") liste = liste.map(e => ({...e, t: Math.min(e.t, profil.coursMax)}));
+      const exos = []; let temps = 0;
+      let garde = 0;
+      while (temps < parTheme - 4 && garde < 6) {
+        const e = tirer(liste, deja);
+        if (temps + e.t > parTheme + 5) { garde++; continue; }
+        exos.push(e); temps += e.t; garde++;
+      }
+      if (!exos.length) exos.push(tirer(liste, new Set()));
+      blocs.push({ theme:th, exos });
+    });
+
+    blocs.push({ theme:"retour", exos:[BANQUE.retour[Math.floor(Math.random()*BANQUE.retour.length)]] });
+    return { titre:m.titre, blocs };
+  });
+
+  etat.seanceOuverte = 0;
+  sauver();
+  rendreSemaine();
+  montrer("semaine");
+}
+
+/* =====================================================================
+   RENDU
+   ===================================================================== */
+
+function montrer(id) {
+  document.querySelectorAll(".ecran").forEach(e => e.classList.remove("actif"));
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("actif"));
+  document.getElementById("ecran-"+id).classList.add("actif");
+  document.getElementById("nav-"+id).classList.add("actif");
+  if (id==="seance") rendreSeance();
+  if (id==="exos") rendreBibli();
+  window.scrollTo(0,0);
+}
+
+function rendreSemaine() {
+  const c = document.getElementById("contenu-semaine");
+  document.getElementById("entete-sous").textContent =
+    etat.cat + " · " + etat.nb + " séance" + (etat.nb>1?"s":"") + "/semaine · " + etat.duree + " min";
+
+  if (!etat.semaine) {
+    c.innerHTML = `<div class="vide"><div class="ball">🏀</div>
+      Aucune semaine générée pour l'instant.<br>
+      Va dans <b>Réglages</b> pour choisir ta catégorie et générer ton premier plan.</div>`;
+    return;
+  }
+  const profil = PROFILS_AGE[etat.cat];
+  let h = `<div class="avert"><b>Repère ${etat.cat} :</b> ${profil.note}</div>`;
+  etat.semaine.forEach((s,i) => {
+    const themes = s.blocs.slice(1,-1).map(b => NOMS_THEMES[b.theme]);
+    h += `<div class="jour-carte" onclick="ouvrirSeance(${i})">
+      <div class="quand">Séance ${i+1}</div>
+      <h3>${s.titre}</h3>
+      <div class="themes">${[...new Set(themes)].join(" · ")}</div>
+    </div>`;
+  });
+  c.innerHTML = h;
+}
+
+function ouvrirSeance(i) {
+  etat.seanceOuverte = i;
+  sauver();
+  montrer("seance");
+}
+
+function rendreSeance() {
+  const c = document.getElementById("contenu-seance");
+  if (!etat.semaine) {
+    c.innerHTML = `<div class="vide"><div class="ball">🏀</div>Génère d'abord une semaine dans les réglages.</div>`;
+    return;
+  }
+  const s = etat.semaine[etat.seanceOuverte];
+  const total = s.blocs.reduce((acc,b)=>acc+b.exos.reduce((a,e)=>a+e.t,0),0);
+  let h = `<div class="seance-tete">
+    <div class="quand">Séance ${etat.seanceOuverte+1} sur ${etat.semaine.length}</div>
+    <h2>${s.titre}</h2>
+    <div class="meta">${etat.cat} · environ ${total} minutes · effectif ${etat.effectif}</div>
+  </div>`;
+  s.blocs.forEach(b => {
+    const t = b.exos.reduce((a,e)=>a+e.t,0);
+    h += `<div class="bloc"><div class="bloc-tete"><h3>${NOMS_THEMES[b.theme]}</h3><div class="duree">${t} min</div></div>`;
+    b.exos.forEach(e => {
+      h += `<div class="exo"><h4>${e.n}<span>${e.t} min</span></h4><p>${e.d}</p>`;
+      if (e.a) h += `<div class="adapt"><b>Coach :</b> ${e.a}</div>`;
+      h += btnAnim(e.n) + `</div>`;
+    });
+    h += `</div>`;
+  });
+  if (etat.semaine.length > 1) {
+    h += `<button class="btn-second" onclick="ouvrirSeance(${(etat.seanceOuverte+1)%etat.semaine.length})">Séance suivante</button>`;
+  }
+  c.innerHTML = h;
+}
+
+/* ---------- réglages ---------- */
+function pilules(id, valeurs, cle, format) {
+  const c = document.getElementById(id);
+  c.innerHTML = "";
+  valeurs.forEach(v => {
+    const b = document.createElement("button");
+    b.textContent = format ? format(v) : v;
+    if (etat[cle] === v) b.classList.add("sel");
+    b.onclick = () => { etat[cle] = v; sauver(); rendreReglages(); rendreSemaine(); };
+    c.appendChild(b);
+  });
+}
+function rendreReglages() {
+  pilules("pil-cat", CATEGORIES, "cat");
+  pilules("pil-nb", [1,2,3,4,5], "nb");
+  pilules("pil-duree", [60,75,90,120], "duree", v => v+" min");
+  pilules("pil-effectif", ["6-8","8-10","10-12","12+"], "effectif");
+  document.getElementById("note-cat").textContent = PROFILS_AGE[etat.cat].note;
+}
+
+/* =====================================================================
+   ANIMATIONS : scénarios motion design de chaque exercice
+   Terrain "demi" : 15 × 14 m, panier en haut. Terrain "plein" : 28 × 15 m, horizontal.
+   Acteurs : pts = [[temps, x, y], ...]
+   Ballons : pistes [[temps, cible], ...] ; cible = id d'acteur, "id:g" (main gauche),
+             "panier" / "panierG" / "panierD", [x,y] ou null (caché)
+   ===================================================================== */
+
+const ANIMS = (function () {
+  const PAN = [7.5, 1.575];
+  const A = {};
+
+  /* ---------- outils de construction ---------- */
+  // Chemin à vitesse constante. Un nombre dans la liste = pause (en s).
+  // Un point [x,y,v] impose une vitesse sur ce tronçon.
+  function ch(t0, v, pts) {
+    const out = [[t0, pts[0][0], pts[0][1]]];
+    let t = t0;
+    for (let i = 1; i < pts.length; i++) {
+      const p = pts[i], l = out[out.length - 1];
+      if (typeof p === "number") { t += p; out.push([+t.toFixed(3), l[1], l[2]]); continue; }
+      t += Math.hypot(p[0] - l[1], p[1] - l[2]) / (p[2] || v);
+      out.push([+t.toFixed(3), p[0], p[1]]);
+    }
+    return out;
+  }
+  const fin = k => k[k.length - 1][0];
+  // Défenseure qui suit son attaquante, placée entre elle et le panier
+  function marque(k, cible, dist, retard) {
+    return k.map(([t, x, y]) => {
+      const dx = cible[0] - x, dy = cible[1] - y, d = Math.hypot(dx, dy) || 1;
+      const m = Math.min(dist, d * 0.5);
+      return [+(t + (retard || 0.15)).toFixed(3), x + dx / d * m, y + dy / d * m];
+    });
+  }
+  // Série de sauts entre des points : retourne {pts, sauts}
+  function bonds(t0, points, vol, sol, amp) {
+    const pts = [[t0, points[0][0], points[0][1]]], sauts = [];
+    let t = t0;
+    for (let i = 1; i < points.length; i++) {
+      sauts.push([+t.toFixed(3), amp || 1]);
+      t += vol; pts.push([+t.toFixed(3), points[i][0], points[i][1]]);
+      t += sol; pts.push([+t.toFixed(3), points[i][0], points[i][1]]);
+    }
+    return { pts, sauts, fin: t };
+  }
+  const serie = (a, b, pas, amp) => { const s = []; for (let t = a; t < b - 1e-6; t += pas) s.push([+t.toFixed(3), amp || 1]); return s; };
+  const lerp = (a, b, p) => [a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p];
+
+  /* =============================== ÉCHAUFFEMENT =============================== */
+
+  A["Toro échauffement"] = (() => {
+    const C = [7.5, 7.6], R = 3.3, pos = [];
+    for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + i * Math.PI / 3; pos.push([C[0] + R * Math.cos(a), C[1] + R * Math.sin(a)]); }
+    const acteurs = pos.map((p, i) => ({ id: "a" + i, role: "att", label: String(i + 1), pts: [[0, p[0], p[1]]] }));
+    const seq = [0, 3, 1, 4, 2, 5, 0];
+    const ball = [[0, "a0"]];
+    const d1 = [[0, C[0] - 0.7, C[1] + 0.3]], d2 = [[0, C[0] + 0.7, C[1] - 0.3]];
+    let t = 0.6;
+    for (let i = 0; i < seq.length - 1; i++) {
+      const a = pos[seq[i]], b = pos[seq[i + 1]];
+      ball.push([t, "a" + seq[i]], [t + 0.5, "a" + seq[i + 1]]);
+      const presse = lerp(b, C, 0.32), coupe = lerp(lerp(a, b, 0.5), C, 0.35);
+      (i % 2 ? d2 : d1).push([t + 0.9, presse[0], presse[1]]);
+      (i % 2 ? d1 : d2).push([t + 0.9, coupe[0], coupe[1]]);
+      t += 1.1;
+    }
+    // dernière passe interceptée
+    const a = pos[0], b = pos[2], inter = lerp(a, b, 0.5);
+    d2.push([t, d2[d2.length - 1][1], d2[d2.length - 1][2]], [t + 0.35, inter[0], inter[1]]);
+    ball.push([t, "a0"], [t + 0.35, "D2"]);
+    acteurs.push({ id: "D1", role: "def", label: "D", pts: d1 }, { id: "D2", role: "def", label: "D", pts: d2 });
+    return {
+      terrain: "demi", duree: t + 1.8, acteurs, ballons: [ball],
+      etapes: [[0, "Passes rapides à une touche"], [2.8, "Les défenseures ferment les lignes de passe"], [t + 0.2, "Interception : on change de rôle"]]
+    };
+  })();
+
+  A["Gammes + ballon"] = (() => {
+    const lignes = [3, 6, 9, 12], acteurs = [];
+    lignes.forEach((y, i) => {
+      const d = i * 0.15, pts = [[d, 1.5, y], [d + 4, 10, y]];
+      let x = 10, s = 1;
+      for (let t = d + 4.4; t <= d + 7.01; t += 0.4) { x += 1.2; s = -s; pts.push([+t.toFixed(2), x, y + 0.28 * s]); }
+      pts.push([d + 8.6, 26.3, y]);
+      acteurs.push({ id: "g" + i, role: "att", label: String(i + 1), balle: 1, pts, sauts: serie(d, d + 4, 0.3, 0.45) });
+    });
+    return {
+      terrain: "plein", duree: 9.6, acteurs,
+      etapes: [[0, "Montées de genoux, ballon en dribble"], [4, "Pas chassés"], [7.2, "Accélération progressive"]]
+    };
+  })();
+
+  A["Dribble follow-the-leader"] = (() => {
+    const lead = ch(0.2, 3.6, [[3, 12.6], 0.4, [5.6, 10.4, 6], [3, 8.8], 0.5, [5.2, 6.8, 6.5], [3.2, 4.8], 0.3, [4.6, 8, 5], [3, 12.6, 3]]);
+    const suit = lead.map(([t, x, y]) => [+(t + 0.7).toFixed(3), x + 1.5, y + 0.4]);
+    const miroir = k => k.map(([t, x, y]) => [+(t + 0.25).toFixed(3), 15 - x, y]);
+    const dur = fin(suit) + 0.9;
+    return {
+      terrain: "demi", duree: dur,
+      acteurs: [
+        { id: "m1", role: "att", label: "M", balle: 1, pts: lead },
+        { id: "s1", role: "att", label: "S", balle: 1, pts: suit },
+        { id: "m2", role: "att", label: "M", balle: 1, pts: miroir(lead) },
+        { id: "s2", role: "att", label: "S", balle: 1, pts: miroir(suit) }
+      ],
+      etapes: [[0, "La meneuse impose rythme et changements de main"], [2.4, "La suiveuse reproduit à l'identique"], [dur - 2.2, "Toutes les 45 s, on inverse les rôles"]]
+    };
+  })();
+
+  A["Passe et suit en mouvement"] = (() => {
+    // 3 colonnes en triangle, la passeuse rejoint la fin de la colonne servie
+    const slots = [
+      [[3, 10.2], [2.1, 11], [1.2, 11.8]],
+      [[7.5, 5], [7.5, 3.9], [7.5, 2.8]],
+      [[12, 10.2], [12.9, 11], [13.8, 11.8]]
+    ];
+    const files = [["p0", "p1", "p2"], ["p3", "p4"], ["p5", "p6"]];
+    const k = {};
+    files.forEach((f, c) => f.forEach((id, j) => { k[id] = [[0, slots[c][j][0], slots[c][j][1]]]; }));
+    const aller = (id, t0, t1, p) => { const l = k[id][k[id].length - 1]; k[id].push([+t0.toFixed(2), l[1], l[2]], [+t1.toFixed(2), p[0], p[1]]); };
+    const ball = [[0, "p0"]];
+    const T = 2.2; let c = 0;
+    for (let n = 0; n < 6; n++) {
+      const t = 0.5 + n * T, dest = (c + 1) % 3;
+      const passeuse = files[c].shift(), receveuse = files[dest][0];
+      ball.push([t, passeuse], [t + 0.45, receveuse]);
+      const cible = slots[dest][files[dest].length];
+      aller(passeuse, t + 0.15, t + 0.15 + Math.hypot(cible[0] - k[passeuse][k[passeuse].length - 1][1], cible[1] - k[passeuse][k[passeuse].length - 1][2]) / 4.6, cible);
+      files[c].forEach((id, j) => aller(id, t + 0.35, t + 0.85, slots[c][j]));
+      files[dest].push(passeuse);
+      c = dest;
+    }
+    return {
+      terrain: "demi", duree: 0.5 + 6 * T + 0.3,
+      acteurs: Object.keys(k).map((id, i) => ({ id, role: "att", label: String(i + 1), pts: k[id] })),
+      ballons: [ball],
+      etapes: [[0, "Je passe et je suis mon ballon"], [2.7, "Je rejoins la fin de la colonne servie"], [7.2, "Rythme croissant : à terre, puis après un dribble"]]
+    };
+  })();
+
+  /* =============================== PLIOMÉTRIE =============================== */
+
+  A["Parcours sauts ludique"] = (() => {
+    const couloir = (x, dec, id1, id2, lbl) => {
+      const s = x < 7.5 ? 1 : -1;
+      const pts1 = [[x, 13.4], [x - 0.5 * s, 12], [x + 0.5 * s, 11], [x - 0.5 * s, 10], [x + 0.5 * s, 9], [x, 8.9]];
+      const b1 = bonds(dec, pts1, 0.42, 0.22, 0.7);
+      const riv = bonds(b1.fin + 0.1, [[x, 8.9], [x, 6.5]], 0.5, 0.2, 1.3);
+      const lat = bonds(riv.fin, [[x, 6.5], [x, 4.9], [x, 3.9], [x, 2.9]], 0.4, 0.22, 0.8);
+      const retour = ch(lat.fin, 6.2, [[x, 2.9], [x, 1.4], [x - 2.2 * s, 1.8], [x - 2.2 * s, 12.5], [x - 0.6 * s, 13.8]]);
+      const pts = [...b1.pts, ...riv.pts, ...lat.pts, ...retour];
+      const t2 = fin(retour);
+      const p2 = bonds(t2 + 0.1, pts1, 0.42, 0.22, 0.7);
+      return {
+        acteurs: [
+          { id: id1, role: "att", label: lbl, pts, sauts: [...b1.sauts, ...riv.sauts, ...lat.sauts] },
+          { id: id2, role: "att", label: lbl, pts: [[0, x + 0.9 * s, 14.4], [t2 - 0.6, x + 0.9 * s, 14.4], [t2, x, 13.4], ...p2.pts], sauts: p2.sauts }
+        ], t2
+      };
+    };
+    const g = couloir(3.8, 0.3, "a1", "a2", "A"), d = couloir(11.2, 0.55, "b1", "b2", "B");
+    const decor = [];
+    [3.8, 11.2].forEach(x => {
+      const s = x < 7.5 ? 1 : -1;
+      [[x - 0.5 * s, 12], [x + 0.5 * s, 11], [x - 0.5 * s, 10], [x + 0.5 * s, 9]].forEach(p => decor.push({ type: "cerceau", x: p[0], y: p[1] }));
+      decor.push({ type: "eau", x: x - 1.8, y: 7.2, w: 3.6, h: 1.1 });
+      [5.4, 4.4, 3.4].forEach(y => decor.push({ type: "latte", x, y }));
+    });
+    return {
+      terrain: "demi", duree: Math.max(g.t2, d.t2) + 3.4, decor, acteurs: [...g.acteurs, ...d.acteurs],
+      etapes: [[0, "Cerceaux : pieds joints, cloche-pied"], [3.4, "On franchit la rivière"], [4.4, "Lattes au sol, réceptions équilibrées"], [6, "Retour en courant, on tape dans la main"]]
+    };
+  })();
+
+  A["Corde à sauter"] = {
+    terrain: "demi", duree: 13.5,
+    acteurs: [[4.2, 5.2], [10.8, 5.2], [4.2, 10.4], [10.8, 10.4]].map((p, i) => ({
+      id: "c" + i, role: "att", label: String(i + 1), pts: [[0, p[0], p[1]]],
+      corde: [[0.2, 5], [8, 13]],
+      sauts: [...serie(0.2 + i * 0.04, 5, 0.34, 0.55), ...serie(8 + i * 0.04, 13, 0.3, 0.6)]
+    })),
+    etapes: [[0, "30 s de saut, pieds joints"], [5, "30 s de repos"], [8, "Variantes : alterné, puis sur un pied"], [12.6, "6 à 8 blocs"]],
+    tableau: [[0.2, "Saut 30 s"], [5, "Repos 30 s"], [8, "Saut 30 s"]]
+  };
+
+  A["Sauts bipodaux lattes basses"] = (() => {
+    const couloir = (x, d, id, lbl) => {
+      const pts = [[x, 11.6]]; for (let y = 10.5; y >= 5.4; y -= 1) pts.push([x, y]);
+      const b = bonds(d, pts, 0.4, 0.28, 0.75);
+      const r = ch(b.fin + 0.8, 1.9, [[x, 5.5], [x + 1.4, 6], [x + 1.4, 11.2], [x, 11.6]]);
+      return { id, role: "att", label: lbl, pts: [...b.pts, ...r], sauts: b.sauts };
+    };
+    const decor = [];
+    [5, 10].forEach(x => { for (let y = 11; y >= 6; y -= 1) decor.push({ type: "latte", x, y }); });
+    return {
+      terrain: "demi", duree: 11.4, decor,
+      acteurs: [couloir(5, 0.3, "l1", "1"), couloir(10, 0.65, "l2", "2")],
+      etapes: [[0, "6 sauts pieds joints, lattes 10-15 cm"], [2, "Réception silencieuse, genoux alignés"], [5.2, "Retour en marchant : repos complet"]]
+    };
+  })();
+
+  A["Bonds horizontaux"] = (() => {
+    const couloir = (x, d, i) => {
+      const b = bonds(d, [[x, 12.6], [x, 10.7], [x, 8.8], [x, 6.9]], 0.5, 0.12, 1.1);
+      const hold = b.fin + 1.8;
+      const r = ch(hold, 1.7, [[x, 6.9], [x + 1.2, 7.4], [x + 1.2, 12.2], [x, 12.6]]);
+      return { id: "h" + i, role: "att", label: String(i + 1), pts: [...b.pts, ...r], sauts: b.sauts };
+    };
+    return {
+      terrain: "demi", duree: 9.6,
+      acteurs: [couloir(2.6, 0.3, 1), couloir(7, 0.5, 2), couloir(11.4, 0.7, 3)],
+      decor: [2.6, 7, 11.4].map(x => ({ type: "marque", x, y: 12.6 })),
+      etapes: [[0, "3 bonds enchaînés pieds joints"], [2.3, "Stabilisation 2 s sur la dernière réception"], [4.4, "Retour en marchant, 5 passages"], [8, "Puis version cloche-pied"]]
+    };
+  })();
+
+  A["Haies basses + sprint"] = (() => {
+    const couloir = (y, d, i) => {
+      const b = bonds(d, [[2, y], [3.55, y], [4.65, y], [5.75, y], [6.85, y]], 0.36, 0.14, 0.8);
+      const s = ch(b.fin, 7.5, [[6.85, y], [17, y], [18, y + (y < 7.5 ? 1.4 : -1.4), 3], [3, y + (y < 7.5 ? 1.4 : -1.4), 4.2], [2, y, 2]]);
+      return { id: "h" + i, role: "att", label: String(i + 1), pts: [...b.pts, ...s], sauts: b.sauts };
+    };
+    const decor = [];
+    [4.2, 10.8].forEach(y => { [3, 4.1, 5.2, 6.3].forEach(x => decor.push({ type: "haie", x, y, rot: 90 })); decor.push({ type: "plot", x: 17, y }); });
+    return {
+      terrain: "plein", duree: 9.2, decor,
+      acteurs: [couloir(4.2, 0.3, 1), couloir(10.8, 0.6, 2)],
+      etapes: [[0, "4 haies basses, pieds joints"], [2.4, "Sprint 10 m"], [3.8, "Retour en marchant"], [7.2, "Réceptions qui se dégradent : on arrête"]]
+    };
+  })();
+
+  A["Drop jumps + rebond"] = {
+    terrain: "demi", duree: 7.8,
+    decor: [{ type: "banc", x: 6.3, y: 5.35, w: 2.4, h: 0.55 }],
+    acteurs: [
+      {
+        id: "d1", role: "att", label: "1",
+        pts: [[0, 7.5, 5.6], [0.5, 7.5, 5.6], [0.85, 7.5, 4.5], [0.95, 7.5, 4.5], [1.35, 7.5, 3.9], [1.7, 7.5, 3.9], ...ch(1.7, 3, [[7.5, 3.9], [10.2, 4.4], [10.2, 7.5], [8.6, 7.7]]), [4.6, 8.6, 7.7], [5.1, 7.5, 7.0], [6.9, 7.5, 7.0], [7.4, 7.5, 5.6]],
+        sauts: [[0.5, 0.6], [0.95, 1.8]]
+      },
+      {
+        id: "d2", role: "att", label: "2",
+        pts: [[0, 7.5, 7.0], [1.8, 7.5, 7.0], [2.3, 7.5, 5.6], [3.3, 7.5, 5.6], [3.65, 7.5, 4.5], [3.75, 7.5, 4.5], [4.15, 7.5, 3.9], [4.5, 7.5, 3.9], ...ch(4.5, 2.4, [[7.5, 3.9], [4.8, 4.4], [4.8, 7.6], [6.4, 7.8]])],
+        sauts: [[3.3, 0.6], [3.75, 1.8]]
+      }
+    ],
+    etapes: [[0, "Descente du banc (30-40 cm)"], [0.9, "Réception puis saut vertical immédiat"], [1.5, "On touche la planche ou le filet"], [4.6, "4 séries de 5, repos 90 s"]]
+  };
+
+  A["Sauts d'appel spécifiques basket"] = {
+    terrain: "demi", duree: 8.8,
+    acteurs: [
+      { id: "C", role: "coach", label: "C", pts: [[0, 7.5, 8.4]] },
+      { id: "r", role: "att", label: "1", pts: [...ch(0.1, 5, [[11.8, 9.6], [8.5, 3.2]]), [1.7, 7.9, 2.5], [2, 7.9, 2.5], ...ch(2.6, 3, [[7.9, 2.5], [12.6, 10.6]])], sauts: [[1.3, 1.7]] },
+      { id: "l", role: "att", label: "2", pts: [[0, 3, 9.6], ...ch(3.3, 5, [[3, 9.6], [5.9, 3.7]]), [4.9, 6.7, 2.4], [5.6, 6.7, 2.4], ...ch(5.6, 3, [[6.7, 2.4], [2.6, 10.4]])], sauts: [[4.5, 1.4]] }
+    ],
+    ballons: [
+      [[0, "C"], [0.6, "C"], [1.25, "panier"], [1.6, "r"], [2.4, "r"], [2.9, "C"]],
+      [[0, "l"], [4.6, "l"], [5.1, "panier"], [5.6, [7.3, 3.3]], [5.7, null]]
+    ],
+    etapes: [[0, "Appel deux pieds : on va chercher le rebond"], [3.3, "Appel un pied : le double-pas"], [5.6, "8 répétitions de chaque"]]
+  };
+
+  /* =============================== COURSE =============================== */
+
+  A["Fartlek sur terrain"] = (() => {
+    const poly = [[1.3, 1.3], [26.7, 1.3], [26.7, 13.7], [1.3, 13.7]];
+    const L = 2 * (25.4 + 12.4), v = L / 22;
+    const surBoucle = d => {
+      d = ((d % L) + L) % L;
+      for (let i = 0; i < 4; i++) {
+        const a = poly[i], b = poly[(i + 1) % 4], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        if (d <= l) return lerp(a, b, d / l);
+        d -= l;
+      }
+      return poly[0];
+    };
+    const acteurs = [0, 1, 2].map(i => {
+      const pts = [];
+      for (let t = 0; t <= 16.001; t += 0.1) {
+        const d = t < 10 ? v * t : 10 * v + 2 * v * (t - 10);
+        const p = surBoucle(d + 20 - i * 2.6);
+        pts.push([+t.toFixed(2), p[0], p[1]]);
+      }
+      return { id: "f" + i, role: "att", label: String(i + 1), pts, trace: i === 0 };
+    });
+    return {
+      terrain: "plein", duree: 16, acteurs,
+      etapes: [[0, "1 min allure facile"], [10, "30 s allure soutenue, réglée à la voix"]],
+      tableau: [[0, "Allure facile"], [10, "Allure soutenue"]]
+    };
+  })();
+
+  A["Navettes progressives"] = (() => {
+    const cibles = [5.8, 14, 22.2, 27.4], acteurs = [];
+    let reperes = [];
+    [4, 7.5, 11].forEach((y, i) => {
+      const pts = [[0.6, y]];
+      cibles.forEach(x => { pts.push([x, y], 0.15, [0.6, y], 0.15); });
+      const k = ch(0.2 + i * 0.25, 11, pts);
+      if (i === 0) reperes = k.filter((_, j) => j > 0 && j % 4 === 1).map(p => p[0]);
+      acteurs.push({ id: "n" + i, role: "att", label: String(i + 1), pts: k });
+    });
+    // reperes = arrivée sur chaque ligne ; l'étape s'affiche au départ du tronçon
+    const dep = [0, ...reperes.slice(0, 3).map((t, j) => t + (cibles[j] - 0.6) / 11 + 0.3)];
+    return {
+      terrain: "plein", duree: fin(acteurs[2].pts) + 1.2,
+      decor: cibles.map(x => ({ type: "repere", x })),
+      acteurs,
+      etapes: [[dep[0], "Aller-retour ligne des lancers francs"], [dep[1], "Aller-retour milieu de terrain"], [dep[2], "Aller-retour lancers francs opposés"], [dep[3], "Aller-retour ligne de fond opposée"]],
+      tableau: dep.map((t, j) => [t, "Navette " + (j + 1) + "/4"])
+    };
+  })();
+
+  A["Intermittent 15/15"] = {
+    terrain: "plein", duree: 12.4,
+    acteurs: [3, 6, 9, 12].map((y, i) => ({
+      id: "i" + i, role: "att", label: String(i + 1),
+      pts: [[0, 2, y], [3, 24, y], [6, 21, y], [9, 2.4, y], [12, 4.4, y]].map(p => [p[0] + i * 0.08, p[1], p[2]])
+    })),
+    etapes: [[0, "15 s de course intense"], [3, "15 s de marche"], [6, "15 s de course intense"], [9, "15 s de marche, puis 2 min entre les blocs"]],
+    tableau: [[0, "Intense"], [3, "Marche"], [6, "Intense"], [9, "Marche"]]
+  };
+
+  A["Relais navettes par équipes"] = (() => {
+    const equipe = (x, pre, d, v, lbls) => {
+      const S = [[x, 12.4], [x, 13.3], [x, 14.2]];
+      const s = x < 7.5 ? 1 : -1;
+      const k = {}; [0, 1, 2].forEach(j => { k[pre + j] = [[0, S[j][0], S[j][1]]]; });
+      const ball = [[0, pre + 0]];
+      const jambe = (id, t0) => {
+        const a = ch(t0, v, [[x, 12.4], [x, 1.6], 0.12, [x, 9.6, v * 1.1]]);
+        const tp = fin(a);
+        const r = ch(tp, 4, [[x, 9.6], [x + 1.3 * s, 10.8], [x + 1.3 * s, 13.3], [x, 13.3]]);
+        k[id].push(...a, ...r);
+        return tp;
+      };
+      const avance = (id, t, j) => { const l = k[id][k[id].length - 1]; k[id].push([t, l[1], l[2]], [t + 0.5, S[j][0], S[j][1]]); };
+      let tp = jambe(pre + 0, d);
+      avance(pre + 1, d + 0.3, 0); avance(pre + 2, d + 0.4, 1);
+      ball.push([tp, pre + 0], [tp + 0.4, pre + 1]);
+      const tp2 = jambe(pre + 1, tp + 0.45);
+      avance(pre + 2, tp + 0.7, 0);
+      ball.push([tp2, pre + 1], [tp2 + 0.4, pre + 2]);
+      return { acteurs: [0, 1, 2].map(j => ({ id: pre + j, role: "att", label: lbls, pts: k[pre + j] })), ball, fin: tp2 + 0.4 };
+    };
+    const a = equipe(4, "A", 0.3, 6.2, "A"), b = equipe(11, "B", 0.6, 5.8, "B");
+    return {
+      terrain: "demi", duree: Math.max(a.fin, b.fin) + 1.2,
+      acteurs: [...a.acteurs, ...b.acteurs], ballons: [a.ball, b.ball],
+      etapes: [[0, "Relais : dribble à l'aller"], [2.2, "Retour en courant, passe à la suivante"], [4.2, "Le collectif fait oublier l'effort"]]
+    };
+  })();
+
+  A["Défense en glissade + replis"] = (() => {
+    const couloir = (xa, xb, d, i) => {
+      const z = [[xa, 13.2], [xb, 10.8], [xa, 8.4], [xb, 6], [xa, 3.6]];
+      const k = ch(d, 2.3, z);
+      const r = ch(fin(k) + 0.2, 7, [[xa, 3.6], [xa - 0.6 * Math.sign(xb - xa), 8], [xa, 13.2]]);
+      return { id: "g" + i, role: "def", label: String(i + 1), pts: [...k, ...r] };
+    };
+    const a = couloir(1.6, 5.8, 0.3, 1), b = couloir(9.2, 13.4, 0.6, 2);
+    const decor = [];
+    [[1.6, 5.8], [9.2, 13.4]].forEach(([xa, xb]) => [[xb, 10.8], [xa, 8.4], [xb, 6], [xa, 3.6]].forEach(p => decor.push({ type: "plot", x: p[0], y: p[1] })));
+    const t = fin(a.pts);
+    return {
+      terrain: "demi", duree: fin(b.pts) + 0.9, decor, acteurs: [a, b],
+      etapes: [[0, "Glissades défensives en zigzag"], [2, "Fesses basses, dos droit, on ne croise jamais les pieds"], [t - 1.5, "Sprint de repli"]]
+    };
+  })();
+
+  /* =============================== RESPIRATION =============================== */
+
+  A["Respiration en cohérence"] = {
+    scene: "souffle",
+    phases: [
+      { txt: "Inspire par le nez", v: "in", dur: 5 }, { txt: "Expire par la bouche", v: "out", dur: 5 },
+      { txt: "Inspire par le nez", v: "in", dur: 5 }, { txt: "Expire par la bouche", v: "out", dur: 5 }
+    ]
+  };
+
+  A["Routine lancer franc + souffle"] = {
+    terrain: "demi", duree: 14,
+    acteurs: [
+      { id: "t", role: "att", label: "1", pts: [[0, 7.5, 6.1], [12, 7.5, 6.1], [13.2, 9.2, 2.6]], dribble: [[0, 1.8], [6.9, 8.2]], souffle: [[2.6, 4.6], [8.4, 10.2]] },
+      { id: "r", role: "att", label: "2", pts: [[0, 9.2, 2.6], [12, 9.2, 2.6], [13, 10.4, 7.2]] },
+      { id: "n", role: "att", label: "3", pts: [[0, 10.4, 7.2], [12.1, 10.4, 7.2], [12.9, 7.5, 6.1]] }
+    ],
+    ballons: [[[0, "t"], [4.7, "t"], [5.5, "panier"], [6, "r"], [6.3, "r"], [6.8, "t"], [10.3, "t"], [11.1, "panier"], [11.6, "r"], [12.9, "r"], [13.4, "n"]]],
+    etapes: [[0, "Dribbles : toujours la même routine"], [1.8, "Regard sur le cercle"], [2.6, "Une grande expiration"], [4.7, "Tir"], [12, "2 lancers, puis on tourne"]]
+  };
+
+  A["Respiration après effort"] = {
+    scene: "souffle", pouls: [168, 114],
+    phases: [
+      { txt: "Mains sur la tête, inspire par le nez", v: "in", dur: 3 }, { txt: "Expire lentement", v: "out", dur: 4 },
+      { txt: "Inspiration nasale profonde", v: "in", dur: 3 }, { txt: "Expire lentement", v: "out", dur: 4 },
+      { txt: "Inspiration nasale profonde", v: "in", dur: 3 }, { txt: "Sous 120 bpm : récupérée", v: "out", dur: 4 }
+    ]
+  };
+
+  A["Gainage + respiration contrôlée"] = {
+    scene: "souffle",
+    phases: [
+      { txt: "Planche : inspire", v: "in", dur: 2, pose: "planche" }, { txt: "Planche : expire lentement", v: "out", dur: 4, pose: "planche" },
+      { txt: "Planche : inspire", v: "in", dur: 2, pose: "planche" }, { txt: "Planche : expire lentement", v: "out", dur: 4, pose: "planche" },
+      { txt: "Planche latérale : inspire", v: "in", dur: 2, pose: "laterale" }, { txt: "Planche latérale : expire lentement", v: "out", dur: 4, pose: "laterale" },
+      { txt: "Planche latérale : inspire", v: "in", dur: 2, pose: "laterale" }, { txt: "Planche latérale : expire lentement", v: "out", dur: 4, pose: "laterale" }
+    ]
+  };
+
+  /* =============================== TIR =============================== */
+
+  A["Gamme de tir près du cercle"] = {
+    terrain: "demi", duree: 10.6,
+    acteurs: [{ id: "t", role: "att", label: "1", pts: [[0, 8.7, 2.6], [3.5, 8.7, 2.6], [4.3, 6.3, 2.6], [7.8, 6.3, 2.6], [8.3, 5.7, 3.4]], sauts: [[0.55, 0.35], [2.15, 0.35], [4.75, 0.35], [6.35, 0.35], [8.6, 0.35]] }],
+    ballons: [[[0, "t"], [0.6, "t"], [1.3, "panier"], [1.8, "t"], [2.2, "t"], [2.9, "panier"], [3.4, "t"], [4.8, "t"], [5.5, "panier"], [6, "t:g"], [6.4, "t:g"], [7.1, "panier"], [7.6, "t:g"], [8.6, "t:g"], [9.4, "panier"], [10, "t:g"]]],
+    etapes: [[0, "À 1 m du cercle, coude sous le ballon"], [1.2, "Extension complète, poignet cassé"], [3.5, "20 tirs de chaque côté"], [7.8, "Puis on recule d'un pas"]]
+  };
+
+  A["Tir en sortie de dribble"] = {
+    terrain: "demi", duree: 9.4,
+    acteurs: [
+      { id: "t", role: "att", label: "1", pts: [...ch(0.2, 4.6, [[7.5, 10.4], [10.6, 5.9], 0.6]), ...ch(2.9, 4, [[10.6, 5.9], [7.5, 10.4]]), ...ch(4.5, 4.6, [[7.5, 10.4], [4.4, 5.9], 0.6]), ...ch(7.3, 4, [[4.4, 5.9], [7.5, 10.4]])], sauts: [[2, 0.4], [6.6, 0.4]] },
+      { id: "r", role: "att", label: "2", pts: [[0, 6.4, 2.6], [3, 6.4, 2.6], [3.4, 8.6, 2.6], [7, 8.6, 2.6], [7.4, 6.4, 2.6]] }
+    ],
+    ballons: [[[0, "t"], [2, "t"], [2.8, "panier"], [3.3, "r"], [3.8, "r"], [4.3, "t"], [6.6, "t"], [7.4, "panier"], [7.9, "r"], [8.3, "r"], [8.8, "t"]]],
+    etapes: [[0, "Dribble vers la position"], [1.4, "Arrêt : pieds orientés vers le cercle"], [2, "Tir"], [4.4, "5 positions, 8 tirs par position"]]
+  };
+
+  A["Catch and shoot"] = (() => {
+    const spots = [[13.6, 1.7], [12.2, 6.7], [7.5, 8.9], [2.8, 6.7], [1.4, 1.7]];
+    const pts = [[0, spots[0][0], spots[0][1]]], ball = [[0, "P"]], sauts = [];
+    let t = 0.3;
+    spots.forEach((s, i) => {
+      if (i > 0) { const l = pts[pts.length - 1]; pts.push([+(t - 1.2).toFixed(2), l[1], l[2]], [+(t - 0.1).toFixed(2), s[0], s[1]]); }
+      ball.push([t, "P"], [t + 0.45, "T"], [t + 0.6, "T"], [t + 1.35, "panier"], [t + 1.9, "P"]);
+      sauts.push([t + 0.55, 0.4]);
+      t += 2.3;
+    });
+    return {
+      terrain: "demi", duree: t - 0.2,
+      acteurs: [{ id: "P", role: "coach", label: "P", pts: [[0, 7.5, 3.9]] }, { id: "T", role: "att", label: "T", pts, sauts }],
+      ballons: [ball],
+      etapes: [[0, "Réception basse, ballon dans la pochette"], [0.9, "Tir immédiat, sans temps mort"], [2.4, "On enchaîne de spot en spot"], [t - 1.8, "2 minutes, puis on inverse"]]
+    };
+  })();
+
+  A["Concours de lancers francs par équipes"] = (() => {
+    const equipe = (pre, S, Q1, Q2, pan, lbl, d) => {
+      const k = { [pre + 0]: [[0, ...S]], [pre + 1]: [[0, ...Q1]], [pre + 2]: [[0, ...Q2]] };
+      const ball = [[0, pre + 0]];
+      const bouge = (id, t, p) => { const l = k[id][k[id].length - 1]; k[id].push([t, l[1], l[2]], [t + 0.8, p[0], p[1]]); };
+      let t = d;
+      [0, 1].forEach(n => {
+        const id = pre + n;
+        for (let s = 0; s < 2; s++) { ball.push([t + 0.4, id], [t + 1.2, pan], [t + 1.8, id]); t += 1.8; }
+        if (n === 0) { bouge(pre + 0, t, Q2); bouge(pre + 1, t, S); bouge(pre + 2, t + 0.1, Q1); ball.push([t, id], [t + 0.8, pre + 1]); t += 0.9; }
+      });
+      return { acteurs: [0, 1, 2].map(j => ({ id: pre + j, role: lbl === "A" ? "att" : "def", label: lbl, pts: k[pre + j] })), ball };
+    };
+    const a = equipe("A", [6.15, 7.5], [8, 4.4], [9.1, 4.4], "panierG", "A", 0);
+    const b = equipe("B", [21.85, 7.5], [20, 10.6], [18.9, 10.6], "panierD", "B", 0.25);
+    return {
+      terrain: "plein", duree: 9.8,
+      acteurs: [...a.acteurs, ...b.acteurs], ballons: [a.ball, b.ball],
+      etapes: [[0, "2 équipes, 2 lancers chacune"], [3.6, "On tourne"], [4.5, "On cumule les réussites"], [8.2, "L'équipe perdante a un petit gage"]],
+      tableau: [[0, "A 0 · B 0"], [1.2, "A 1 · B 0"], [1.45, "A 1 · B 1"], [3, "A 2 · B 1"], [5.7, "A 3 · B 1"], [5.95, "A 3 · B 2"], [7.75, "A 3 · B 3"]]
+    };
+  })();
+
+  A["Tir après écran simulé"] = {
+    terrain: "demi", duree: 10.8,
+    decor: [{ type: "plot", x: 10.4, y: 5.5, lbl: "écran" }],
+    acteurs: [
+      { id: "P", role: "att", label: "P", pts: [[0, 3.6, 8.6]] },
+      {
+        id: "T", role: "att", label: "T",
+        pts: [...ch(0.3, 4.6, [[12.8, 1.8], [11.5, 4.4], [10.9, 6.3], [9.4, 7.6], 1.2]), ...ch(3.6, 3.4, [[9.4, 7.6], [13.4, 4.6], [12.8, 1.8]]), ...ch(6.0, 4.6, [[12.8, 1.8], [11.5, 4.4], [10.9, 6.3], [9.4, 7.6], 0.9, [8.3, 6.4, 3.5], 1.2])],
+        sauts: [[2.35, 0.4], [8.95, 0.4]], dribble: [[8.4, 8.9]]
+      }
+    ],
+    ballons: [[[0, "P"], [1.75, "P"], [2.2, "T"], [2.4, "T"], [3.2, "panier"], [4.2, "P"], [7.6, "P"], [8.0, "T"], [9.0, "T"], [9.8, "panier"], [10.3, [7.5, 4]], [10.4, null]]],
+    etapes: [[0, "Le plot joue le rôle de l'écran"], [0.8, "On frotte l'écran au plus près"], [2.2, "Réception, tir direct"], [6.0, "Variante : feinte, puis un dribble"]]
+  };
+
+  A["Double-pas des deux mains"] = {
+    terrain: "demi", duree: 7,
+    acteurs: [
+      { id: "R1", role: "att", label: "1", pts: [...ch(0.3, 5, [[12.2, 8.6], [9.8, 4.9]]), [1.75, 8.4, 3.0], [2.2, 7.6, 2.4], ...ch(2.3, 4.2, [[7.6, 2.4], [4, 6.2], [2, 9.7]])], sauts: [[1.3, 1.1]] },
+      { id: "R2", role: "att", label: "2", pts: [[0, 13, 9.6], [0.6, 13, 9.6], [1.2, 12.2, 8.6]] },
+      { id: "L1", role: "att", label: "3", pts: [[0, 2.8, 8.6], ...ch(2.7, 5, [[2.8, 8.6], [5.2, 4.9]]), [4.15, 6.6, 3.0], [4.6, 7.4, 2.4], ...ch(4.7, 4.2, [[7.4, 2.4], [11, 6.2], [13, 9.7]])], sauts: [[3.7, 1.1]] },
+      { id: "L2", role: "att", label: "4", pts: [[0, 2, 9.7], [3, 2, 9.7], [3.6, 2.8, 8.6]] }
+    ],
+    ballons: [
+      [[0, "R1"], [1.55, "R1"], [2.05, "panier"], [2.45, "R1"]],
+      [[0, "L1:g"], [3.95, "L1:g"], [4.45, "panier"], [4.85, "L1"]]
+    ],
+    etapes: [[0, "Main droite, côté droit"], [2.7, "Main gauche, côté gauche"], [4.8, "Puis contre une défenseure passive"]]
+  };
+
+  /* =============================== JEU COLLECTIF =============================== */
+
+  A["3 contre 3 demi-terrain"] = (() => {
+    const a1 = [[0, 7.5, 9.2], [1.6, 7.5, 9.2], [2, 8.2, 9.5], [6, 8.2, 9.5]];
+    const a2 = [[0, 12.2, 6.4], [6, 12.2, 6.4]];
+    const a3 = [[0, 2.8, 6.4], [4.2, 2.8, 6.4], [4.6, 3.6, 5.6], [5.3, 6.6, 2.9], [6, 6.6, 2.9]];
+    return {
+      terrain: "demi", duree: 7,
+      acteurs: [
+        { id: "a1", role: "att", label: "1", pts: a1 }, { id: "a2", role: "att", label: "2", pts: a2 }, { id: "a3", role: "att", label: "3", pts: a3, sauts: [[5.35, 1]] },
+        { id: "d1", role: "def", label: "D", pts: marque(a1, PAN, 1.1) }, { id: "d2", role: "def", label: "D", pts: marque(a2, PAN, 1.1) },
+        { id: "d3", role: "def", label: "D", pts: marque(a3, PAN, 1.1, 0.45) }
+      ],
+      ballons: [[[0, "a1"], [0.8, "a1"], [1.3, "a2"], [2, "a2"], [2.5, "a1"], [3.1, "a1"], [3.6, "a3"], [4.1, "a3"], [4.5, "a1"], [4.9, "a1"], [5.3, "a3"], [5.4, "a3"], [5.9, "panier"]]],
+      etapes: [[0, "Thème : 3 passes minimum avant de tirer"], [1.3, "1 passe"], [2.5, "2 passes"], [3.6, "3 passes"], [4.1, "Passe et va vers le cercle"], [5.8, "Panier"]],
+      tableau: [[0, "0 passe"], [1.3, "1 passe"], [2.5, "2 passes"], [3.6, "3 passes"], [4.5, "Tir autorisé"]]
+    };
+  })();
+
+  A["Passe et va / passe et suit"] = {
+    terrain: "demi", duree: 6.2,
+    acteurs: [
+      { id: "1", role: "att", label: "1", pts: [[0, 7.5, 9.2], [1.2, 7.5, 9.2], [2.4, 8.8, 4.4], [3.1, 7.6, 2.7], [3.4, 7.6, 2.7], [4.7, 1.2, 1.8]], sauts: [[3.1, 1]] },
+      { id: "2", role: "att", label: "2", pts: [[0, 12.3, 6.8]] },
+      { id: "3", role: "att", label: "3", pts: [[0, 2.7, 6.8], [3, 2.7, 6.8], [4.3, 7.5, 9.2]] },
+      { id: "4", role: "att", label: "4", pts: [[0, 13.8, 1.8]] },
+      { id: "5", role: "att", label: "5", pts: [[0, 1.2, 1.8], [3.3, 1.2, 1.8], [4.5, 2.7, 6.8]] }
+    ],
+    ballons: [[[0, "1"], [1, "1"], [1.5, "2"], [2.4, "2"], [2.85, "1"], [3.1, "1"], [3.6, "panier"], [4.6, "3"]]],
+    etapes: [[0, "Mouvement continu à 5"], [1, "Passe…"], [1.3, "…et va vers le cercle"], [3.4, "On ne reste jamais immobile : on remplit les places"], [5.2, "Puis contre une défense passive"]]
+  };
+
+  A["Montée de balle 2-0 / 3-0 → 3-2"] = {
+    terrain: "plein", duree: 5.8,
+    acteurs: [
+      { id: "A2", role: "att", label: "1", pts: [[0, 4, 7.5], [2.6, 18.6, 7.5], [3.2, 19.2, 7.9]] },
+      { id: "A1", role: "att", label: "2", pts: [[0, 4.5, 2.5], [1, 8.8, 2.5], [2.6, 19.5, 2.8], [3.4, 23.2, 3.6]] },
+      { id: "A3", role: "att", label: "3", pts: [[0, 4.5, 12.5], [1.2, 10, 12.5], [2.8, 20.5, 12], [3.8, 24.2, 10.2], [4.3, 25.3, 8.8]], sauts: [[4.3, 1]] },
+      { id: "D1", role: "def", label: "D", pts: [[0, 20.5, 7.5], [2.2, 20.5, 7.5], [2.7, 19.9, 7.6], [3.4, 22, 4.4]] },
+      { id: "D2", role: "def", label: "D", pts: [[0, 24.8, 7.5], [3, 24.6, 7], [3.9, 24.4, 9.4]] }
+    ],
+    ballons: [[[0, "A2"], [0.8, "A2"], [1.2, "A1"], [1.7, "A1"], [2.1, "A2"], [2.8, "A2"], [3.2, "A1"], [3.5, "A1"], [3.9, "A3"], [4.3, "A3"], [4.8, "panierD"]]],
+    etapes: [[0, "Couloirs : une au milieu, deux en aile"], [1, "La balle avance par la passe, pas par le dribble"], [2.6, "Surnombre 3 contre 2"], [3.9, "Finition"]]
+  };
+
+  A["5 contre 5 à thèmes"] = (() => {
+    const at = [
+      [[0, 7.5, 9.4], [6, 7.5, 9.4]],
+      [[0, 12.3, 6.6], [6, 12.3, 6.6]],
+      [[0, 2.7, 6.6], [2, 2.7, 6.6], [3, 4.6, 8.2]],
+      [[0, 13.7, 1.8], [6, 13.7, 1.8]],
+      [[0, 9.8, 3.4], [2.8, 9.8, 3.4], [3.5, 8.6, 2.7], [5, 8.6, 2.7]]
+    ];
+    const acteurs = at.map((k, i) => ({ id: "a" + (i + 1), role: "att", label: String(i + 1), pts: k }));
+    acteurs[4].sauts = [[3.45, 1.1], [4.15, 1]];
+    at.forEach((k, i) => acteurs.push({ id: "d" + (i + 1), role: "def", label: "D", pts: marque(k, PAN, 1.1, i === 4 ? 0.5 : 0.2) }));
+    return {
+      terrain: "demi", duree: 6.2, acteurs,
+      ballons: [[[0, "a1"], [0.7, "a1"], [1.1, "a2"], [1.8, "a2"], [2.2, "a4"], [2.6, "a4"], [3.35, "panier"], [3.7, "a5"], [4.2, "a5"], [4.7, "panier"]]],
+      etapes: [[0, "Thème : panier valable après rebond offensif"], [0.7, "On fait tourner la balle"], [2.6, "Tir…"], [3.4, "…rebond offensif, et panier"]]
+    };
+  })();
+
+  A["Jeu de transition 11"] = {
+    terrain: "plein", duree: 9.6,
+    acteurs: [
+      { id: "A1", role: "att", label: "1", pts: [[0, 13, 3], [1.8, 20, 3], [2.6, 23.8, 4.4], [3.3, 25.2, 6.2], [3.8, 24.5, 6], [6.8, 6.5, 5.8], [7.6, 4.6, 6.8]], sauts: [[3.3, 1]] },
+      { id: "A2", role: "att", label: "2", pts: [[0, 13, 7.5], [1.8, 19.5, 7.5], [2.2, 20, 7.8], [4.5, 18, 12.5], [7, 9, 14.4]] },
+      { id: "A3", role: "att", label: "3", pts: [[0, 13, 12], [1.9, 21, 12], [2.6, 23, 11], [3.8, 22.5, 10.8], [6.8, 5.8, 9.4], [7.6, 4.4, 8.8]] },
+      { id: "D1", role: "def", label: "D", pts: [[0, 21, 7.5], [1.9, 20.4, 7.5], [2.6, 22.6, 5.2], [4, 22.6, 5.2], [4.4, 20, 4], [7.4, 6.8, 3.6], [8.2, 3.6, 5.2]], sauts: [[8.2, 1]] },
+      { id: "D2", role: "def", label: "D", pts: [[0, 24.8, 7.5], [2.4, 24.8, 6.8], [3.3, 25, 7.2], [3.8, 25.6, 7.6], [4.5, 25.8, 7.5], [5, 22, 7.5], [7.4, 8.6, 7.5], [8, 7.6, 7.6]] },
+      { id: "N", role: "def", label: "N", pts: [[0, 22, 14.4], [4, 22, 14.4], [4.6, 20, 11.8], [7.5, 6.5, 11.5], [8.3, 4.2, 10]] }
+    ],
+    ballons: [[[0, "A2"], [2, "A2"], [2.4, "A1"], [3.3, "A1"], [3.8, "panierD"], [4.3, "D2"], [4.6, "D2"], [5.1, "N"], [6.6, "N"], [7.1, "D2"], [7.4, "D2"], [7.8, "D1"], [8.3, "D1"], [8.8, "panierG"]]],
+    etapes: [[0, "3 attaquantes contre 2 défenseures"], [3.8, "Panier"], [4.3, "Les défenseures repartent en attaque…"], [4.8, "…avec une nouvelle joueuse"], [6.6, "Jeu continu, très cardio"]]
+  };
+
+  A["Défense d'aide en 4 contre 4"] = (() => {
+    const P = [[1.9, 5.4], [5.1, 9.3], [9.9, 9.3], [13.1, 5.4]];
+    const ids = ["a3", "a1", "a2", "a4"], lbl = ["3", "1", "2", "4"];
+    const posD = (j, h) => {
+      const p = P[j], d = Math.abs(j - h);
+      if (d === 0) return lerp(p, PAN, 0.14);
+      if (d === 1) return lerp(lerp(p, PAN, 0.28), P[h], 0.12);
+      return lerp(p, [7.5, 4.6], 0.66);
+    };
+    const suite = [1, 0, 1, 2, 3, 2, 1];
+    const D = P.map((_, j) => [[0, ...posD(j, suite[0])]]);
+    const ball = [[0, ids[suite[0]]]];
+    let t = 0.8;
+    for (let i = 1; i < suite.length; i++) {
+      ball.push([t, ids[suite[i - 1]]], [t + 0.5, ids[suite[i]]]);
+      D.forEach((k, j) => { const l = k[k.length - 1]; const n = posD(j, suite[i]); k.push([t, l[1], l[2]], [t + 0.75, n[0], n[1]]); });
+      t += 1.35;
+    }
+    return {
+      terrain: "demi", duree: t + 0.8,
+      acteurs: [...P.map((p, j) => ({ id: ids[j], role: "att", label: lbl[j], pts: [[0, p[0], p[1]]] })), ...D.map((k, j) => ({ id: "d" + j, role: "def", label: "D", pts: k }))],
+      ballons: [ball],
+      etapes: [[0, "4 attaquantes font tourner la balle"], [0.8, "À chaque passe, la défense s'ajuste"], [2.2, "Côté opposé : position d'aide dans la raquette"], [t - 1.4, "Puis on libère le jeu"]]
+    };
+  })();
+
+  /* =============================== JEU PAR POSTE =============================== */
+
+  A["Ateliers par poste — extérieures"] = {
+    terrain: "demi", duree: 7.2, coupes: [3.3],
+    acteurs: [
+      { id: "a", role: "att", label: "1", pts: [[0, 7.5, 9.4], [3.3, 7.5, 9.4], [3.3, 12.3, 6.6], [4.5, 12.3, 6.6], [5, 13.2, 4], [5.6, 10, 2.2], [6.2, 10, 2.2]], dribble: [[0, 3.3]], sauts: [[5.6, 1]] },
+      { id: "d", role: "def", label: "D", pts: [[0, 7.5, 7.4], [3.3, 7.5, 7.4], [3.3, 9.4, 4.2], [3.6, 9.4, 4.2], [4.3, 11.6, 6], [4.8, 11.8, 5.4], [5.7, 10.4, 3.2]] }
+    ],
+    ballons: [
+      [[0, "a"], [5.7, "a"], [6.2, "panier"]],
+      [[0, "a:g"], [3.2, "a:g"], [3.3, null]]
+    ],
+    etapes: [[0, "Dribble à 2 ballons, tête haute"], [3.3, "Lecture : la défenseure ferme"], [4.3, "Feinte…"], [4.6, "…et départ en dribble vers le cercle"], [6.2, "Faire verbaliser : qu'as-tu vu ?"]]
+  };
+
+  A["Ateliers par poste — intérieures"] = {
+    terrain: "demi", duree: 7.2, coupes: [3.8],
+    acteurs: [
+      { id: "i", role: "att", label: "5", pts: [[0, 10, 3.4], [1.9, 10, 3.4], [2.4, 8.7, 2.6], [3.8, 8.7, 2.6], [3.8, 9.6, 4.6], [4.9, 9.6, 4.6], [5.3, 9.9, 4.3], [5.9, 8.7, 3], [6.8, 8.7, 3]], sauts: [[2.45, 1], [5.9, 1.2]] },
+      { id: "p", role: "att", label: "2", pts: [[0, 12.8, 7.2], [3.8, 12.8, 7.2], [3.8, 16, 7.2]] },
+      { id: "d", role: "def", label: "D", pts: [[0, 9.4, 2.5], [1.9, 9.4, 2.5], [2.5, 9.6, 2.9], [3.8, 9.6, 2.9], [3.8, 9.3, 5.8], [4.6, 9.3, 5.8], [5.2, 10.4, 5.4], [5.9, 10.3, 4.6]] },
+      { id: "C", role: "coach", label: "C", pts: [[0, 16, 12], [3.8, 16, 12], [3.8, 7.5, 9.6]] }
+    ],
+    ballons: [
+      [[0, "p"], [0.6, "p"], [1.1, "i"], [2.5, "i"], [3, "panier"], [3.6, null]],
+      [[0, null], [3.8, "C"], [4.4, "C"], [5.2, "panier"], [5.95, "i"]]
+    ],
+    etapes: [[0, "Réception dos au cercle"], [1.2, "Pivot, puis crochet ou power move"], [3.8, "Rebond : écran retard"], [5.7, "Conquête à deux mains"]]
+  };
+
+  A["1 contre 1 avec contrainte"] = {
+    terrain: "demi", duree: 7.2, coupes: [4],
+    acteurs: [
+      { id: "a", role: "att", label: "1", pts: [[0, 7.5, 9.4], [0.6, 7.5, 9.4], [1.1, 8.9, 8.3], [1.6, 9.8, 6.6], [2.1, 9.6, 4.7], [2.6, 8.6, 3.2], [4, 8.6, 3.2], [4, 16, 6]], sauts: [[2.65, 1]] },
+      { id: "d", role: "def", label: "D", pts: [[0, 7.5, 7.9], [0.8, 7.5, 7.9], [1.4, 8.3, 7.4], [1.9, 9, 6], [2.4, 8.9, 4.4], [2.9, 8, 3.4], [4, 8, 3.4], [4, 9.3, 2.6], [4.9, 9.3, 2.6], [5.3, 8.8, 2.5]] },
+      { id: "p", role: "att", label: "5", pts: [[0, 16, 4], [4, 16, 4], [4, 10, 3.4], [4.9, 10, 3.4], [5.4, 8.2, 2.2]], sauts: [[5.45, 1]] },
+      { id: "C", role: "coach", label: "C", pts: [[0, 16, 9], [4, 16, 9], [4, 12.6, 7]] }
+    ],
+    ballons: [
+      [[0, "a"], [2.7, "a"], [3.2, "panier"], [3.8, null]],
+      [[0, null], [4, "C"], [4.3, "C"], [4.8, "p"], [5.5, "p"], [6, "panier"]]
+    ],
+    etapes: [[0, "Départ ligne des 3 points"], [0.6, "4 dribbles maximum pour conclure"], [4, "Version intérieure : dos au cercle"]],
+    tableau: [[0, "Dribbles 0/4"], [0.85, "Dribbles 1/4"], [1.35, "Dribbles 2/4"], [1.85, "Dribbles 3/4"], [2.35, "Dribbles 4/4"], [4, "Réception poste bas"]]
+  };
+
+  A["Circuit individuel 4 stations"] = (() => {
+    const S = [[3.4, 11], [11.6, 11], [11.2, 3.4], [3.8, 3.4]];
+    const noms = ["Ball-handling", "Tir en sortie de dribble", "Finitions", "Jeu au poste"];
+    const phases = [[0, 4], [5.2, 9.2]];
+    const acteurs = [];
+    for (let g = 0; g < 4; g++) {
+      [0, 1].forEach(m => {
+        const pts = [], dx = m ? 0.8 : -0.8;
+        phases.forEach(([a, b], ph) => {
+          const c = S[(g + ph) % 4];
+          for (let t = a; t <= b + 1e-6; t += 1) {
+            const w = Math.sin(t * 2.1 + g + m * 1.7) * 0.5, z = Math.cos(t * 1.7 + m) * 0.45;
+            pts.push([+t.toFixed(2), c[0] + dx + w, c[1] + z]);
+          }
+        });
+        acteurs.push({ id: "c" + g + m, role: "att", label: String(g * 2 + m + 1), balle: 1, pts });
+      });
+    }
+    return {
+      terrain: "demi", duree: 10.4, acteurs,
+      decor: S.map((p, i) => ({ type: "station", x: p[0], y: p[1], lbl: noms[i] })),
+      etapes: [[0, "4 stations de 4 minutes"], [4, "Rotation au signal"], [5.2, "Tout le monde travaille en même temps"]],
+      tableau: [[0, "Station 1"], [4, "Rotation"], [5.2, "Station 2"], [9.2, "Rotation"]]
+    };
+  })();
+
+  A["Jeu à deux : pick and roll initiation"] = {
+    terrain: "demi", duree: 10.2, coupes: [4.8],
+    acteurs: [
+      { id: "1", role: "att", label: "1", pts: [[0, 7.5, 9.8], [1.6, 7.3, 9.9], [2.2, 9.2, 9.6], [2.8, 10.4, 7.4], [3.4, 9.6, 4.6], [3.8, 8.5, 3.1], [4.8, 8.5, 3.1], [4.8, 7.5, 9.8], [6.4, 7.3, 9.9], [7, 9.2, 9.6], [7.6, 10.6, 8.2], [10.2, 10.6, 8.2]], sauts: [[3.8, 1]] },
+      { id: "5", role: "att", label: "5", pts: [[0, 10.4, 4.8], [1.4, 8.5, 8.8], [4.8, 8.5, 8.8], [4.8, 10.4, 4.8], [6.2, 8.5, 8.8], [7.4, 8.5, 8.8], [8.4, 8.2, 4.2], [8.9, 7.8, 3]], sauts: [[8.9, 1]] },
+      { id: "D1", role: "def", label: "D", pts: [[0, 7.5, 8.6], [2, 7.6, 8.7], [2.6, 8, 8.2], [3.4, 8.4, 6.4], [4.8, 8.4, 6.4], [4.8, 7.5, 8.6], [6.8, 7.6, 8.7], [7.4, 8.1, 8.3], [8.2, 9.5, 8]] },
+      { id: "D5", role: "def", label: "D", pts: [[0, 9.9, 3.9], [1.4, 8.5, 7.6], [3, 8.6, 7.7], [4.8, 8.6, 7.7], [4.8, 9.9, 3.9], [6.2, 8.5, 7.6], [7, 8.6, 7.7], [7.3, 9.6, 8.2], [8.2, 9.2, 6.2]] }
+    ],
+    ballons: [[[0, "1"], [3.85, "1"], [4.35, "panier"], [4.8, "1"], [8.1, "1"], [8.5, "5"], [8.9, "5"], [9.4, "panier"]]],
+    etapes: [[0, "La poseuse d'écran se place"], [2.1, "Lecture 1 : la porteuse attaque le cercle"], [4.8, "Lecture 2 : l'écranteuse roule vers le cercle"], [8.8, "Deux lectures seulement"]]
+  };
+
+  /* =============================== RETOUR AU CALME =============================== */
+
+  A["Étirements dirigés + bilan"] = {
+    scene: "souffle",
+    phases: [
+      { txt: "Quadriceps, 20 s par jambe", v: "calme", dur: 4 }, { txt: "Ischio-jambiers", v: "calme", dur: 4 },
+      { txt: "Mollets", v: "calme", dur: 4 }, { txt: "Épaules", v: "calme", dur: 4 },
+      { txt: "Bilan : qu'a-t-on appris aujourd'hui ?", v: "calme", dur: 5 }
+    ]
+  };
+
+  A["Lancers francs au calme + rangement"] = (() => {
+    const col = ch(0.5, 2.2, [[1.5, 13], [3, 11], 0.35, [5.5, 12.6], 0.35, [10, 12], 0.35, [12.5, 10.5], 0.35, [14.2, 13.5]]);
+    const plots = [[3, 11], [5.5, 12.6], [10, 12], [12.5, 10.5]];
+    const acteurs = [
+      { id: "t", role: "att", label: "1", pts: [[0, 7.5, 6.1]], souffle: [[0.4, 2.2], [4.2, 6]] },
+      { id: "r", role: "att", label: "2", pts: col }
+    ];
+    plots.forEach((p, i) => {
+      const tp = col.find(k => k[1] === p[0] && k[2] === p[1])[0] + 0.2;
+      const suite = col.filter(k => k[0] > tp + 0.2).map(([t, x, y]) => [t, x + 0.25 + i * 0.12, y - 0.3]);
+      acteurs.push({ id: "p" + i, role: "plot", pts: [[0, p[0], p[1]], [tp, p[0], p[1]], [tp + 0.2, p[0] + 0.25 + i * 0.12, p[1] - 0.3], ...suite] });
+    });
+    return {
+      terrain: "demi", duree: fin(col) + 1, acteurs,
+      ballons: [[[0, "t"], [2.4, "t"], [3.2, "panier"], [3.9, "t"], [6.2, "t"], [7, "panier"], [7.6, [7.5, 4.2]]]],
+      etapes: [[0, "2 lancers francs chacune, dans le calme"], [0.4, "Routine respiration avant chaque tir"], [3.4, "Pendant ce temps, le matériel se range"]]
+    };
+  })();
+
+  return A;
+})();
+
+/* =====================================================================
+   LECTEUR : rendu SVG + boucle d'animation
+   ===================================================================== */
+
+const LECT = { an: null, t: 0, vit: 1, joue: false, raf: 0, last: 0, R: null, focusAvant: null, etapeIdx: -1, tabIdx: -1 };
+
+const TERRAINS = {
+  demi: { vb: "-0.5 -0.5 16 15.8", paniers: { panier: [7.5, 1.575] } },
+  plein: { vb: "-0.5 -0.5 29 16", paniers: { panierG: [1.575, 7.5], panierD: [26.425, 7.5] } }
+};
+
+function lignesDemi() {
+  return `<rect class="c-raq" x="5.05" y="0" width="4.9" height="5.8"/>
+  <circle class="c-l" cx="7.5" cy="5.8" r="1.8"/>
+  <path class="c-l" d="M0.9 0V2.99A6.75 6.75 0 0 0 14.1 2.99V0"/>
+  <path class="c-l" d="M6.25 1.575A1.25 1.25 0 0 0 8.75 1.575"/>
+  <path class="c-l" d="M5.7 14A1.8 1.8 0 0 1 9.3 14"/>
+  <line class="c-panneau" x1="6.6" y1="1.2" x2="8.4" y2="1.2"/>
+  <circle class="c-cercle" cx="7.5" cy="1.575" r="0.23"/>`;
+}
+
+function svgTerrain(type) {
+  if (type === "plein") {
+    return `<rect class="c-sol" x="0" y="0" width="28" height="15" rx="0.2"/>
+    <g transform="matrix(0,1,1,0,0,0)">${lignesDemi()}</g>
+    <g transform="matrix(0,1,-1,0,28,0)">${lignesDemi()}</g>
+    <line class="c-l" x1="14" y1="0" x2="14" y2="15"/>
+    <rect class="c-l" x="0" y="0" width="28" height="15" fill="none"/>`;
+  }
+  return `<rect class="c-sol" x="-0.5" y="-0.5" width="16" height="15.8"/>
+  <rect class="c-sol2" x="0" y="0" width="15" height="14"/>
+  ${lignesDemi()}
+  <line class="c-l" x1="0" y1="14" x2="15" y2="14"/>
+  <path class="c-l" d="M0 14V0H15V14" fill="none"/>`;
+}
+
+function svgDecor(d, type) {
+  const H = type === "plein" ? 15 : 14;
+  switch (d.type) {
+    case "plot": return `<g transform="translate(${d.x} ${d.y})"><path class="d-plot" d="M-.3 .22L0-.34L.3 .22Z"/>${d.lbl ? `<text class="d-txt" y=".75">${d.lbl}</text>` : ""}</g>`;
+    case "cerceau": return `<circle class="d-cerceau" cx="${d.x}" cy="${d.y}" r=".45"/>`;
+    case "latte": return `<rect class="d-latte" x="${d.x - 0.9}" y="${d.y - 0.07}" width="1.8" height=".14" rx=".07"/>`;
+    case "haie": return `<g transform="translate(${d.x} ${d.y}) rotate(${d.rot || 0})"><rect class="d-haie" x="-.75" y="-.08" width="1.5" height=".16"/><circle class="d-haie-pied" cx="-.75" r=".12"/><circle class="d-haie-pied" cx=".75" r=".12"/></g>`;
+    case "eau": return `<rect class="d-eau" x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx=".25"/>`;
+    case "banc": return `<rect class="d-banc" x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx=".1"/>`;
+    case "marque": return `<line class="d-marque" x1="${d.x - 0.6}" y1="${d.y + 0.5}" x2="${d.x + 0.6}" y2="${d.y + 0.5}"/>`;
+    case "repere": return `<line class="d-repere" x1="${d.x}" y1="0.2" x2="${d.x}" y2="${H - 0.2}"/>`;
+    case "station": return `<g transform="translate(${d.x} ${d.y})"><circle class="d-station" r="1.9"/><text class="d-txt d-txt-station" y="-2.2">${d.lbl}</text></g>`;
+  }
+  return "";
+}
+
+function construireScene(an) {
+  const svg = document.getElementById("lect-svg");
+  const R = { an, acts: {}, balles: [], rings: {}, paniers: {} };
+  if (an.scene === "souffle") return construireSouffle(an, svg, R);
+  const T = TERRAINS[an.terrain];
+  R.T = T;
+  svg.setAttribute("viewBox", T.vb);
+  let h = svgTerrain(an.terrain);
+  (an.decor || []).forEach(d => { h += svgDecor(d, an.terrain); });
+  // traces des déplacements
+  an.acteurs.forEach(a => {
+    if (a.trace === false || a.role === "plot" || a.role === "coach") return;
+    const pts = []; a.pts.forEach(p => { const l = pts[pts.length - 1]; if (!l || Math.hypot(l[0] - p[1], l[1] - p[2]) > 0.05) pts.push([p[1], p[2]]); });
+    if (pts.length > 1) h += `<polyline class="trace trace-${a.role}" points="${pts.map(p => p[0].toFixed(2) + "," + p[1].toFixed(2)).join(" ")}"/>`;
+  });
+  Object.keys(T.paniers).forEach(k => { const p = T.paniers[k]; h += `<circle class="c-swish" data-pan="${k}" cx="${p[0]}" cy="${p[1]}" r=".25" opacity="0"/>`; });
+  h += `<g id="lect-dyn">`;
+  an.acteurs.forEach((a, i) => {
+    const corps = a.role === "plot" ? `<path class="d-plot" d="M-.28 .2L0-.32L.28 .2Z"/>`
+      : a.role === "coach" ? `<rect class="j-coach" x="-.42" y="-.42" width=".84" height=".84" rx=".16"/><text class="j-txt">${a.label || "C"}</text>`
+      : `<circle class="j-${a.role}" r=".43"/><text class="j-txt">${a.label || ""}</text>`;
+    h += `<g data-a="${i}"><ellipse class="j-ombre" rx=".42" ry=".2" cy=".32"/>${a.souffle ? `<circle class="j-souffle" r=".5"/>` : ""}${a.corde ? `<circle class="j-corde" r=".74"/>` : ""}<g class="j-corps">${corps}</g></g>`;
+  });
+  const nbB = (an.ballons || []).length + an.acteurs.reduce((s, a) => s + (a.balle || 0), 0);
+  for (let i = 0; i < nbB; i++) h += `<g data-b="${i}"><ellipse class="b-ombre" rx=".18" ry=".08"/><g class="b-corps"><circle class="b-cuir" r=".2"/><path class="b-coutures" d="M-.2 0H.2M0-.2V.2M-.14-.14Q-.02 0-.14.14M.14-.14Q.02 0 .14.14"/></g></g>`;
+  h += `</g>`;
+  svg.innerHTML = h;
+  an.acteurs.forEach((a, i) => {
+    const g = svg.querySelector(`[data-a="${i}"]`);
+    R.acts[a.id] = { a, g, corps: g.querySelector(".j-corps"), ombre: g.querySelector(".j-ombre"), souffle: g.querySelector(".j-souffle"), corde: g.querySelector(".j-corde") };
+  });
+  let bi = 0;
+  (an.ballons || []).forEach(tr => { R.balles.push({ tr, g: svg.querySelector(`[data-b="${bi++}"]`) }); });
+  an.acteurs.forEach(a => { for (let j = 0; j < (a.balle || 0); j++) R.balles.push({ fixe: a.id, main: j ? "g" : "", g: svg.querySelector(`[data-b="${bi++}"]`) }); });
+  R.balles.forEach(b => { b.corps = b.g.querySelector(".b-corps"); b.ombre = b.g.querySelector(".b-ombre"); });
+  svg.querySelectorAll(".c-swish").forEach(c => { R.paniers[c.dataset.pan] = c; });
+  R.dyn = svg.querySelector("#lect-dyn");
+  return R;
+}
+
+/* ---------- calculs de position ---------- */
+function posA(a, t) {
+  const k = a.pts, n = k.length;
+  if (n === 1 || t <= k[0][0]) return [k[0][1], k[0][2]];
+  for (let i = 0; i < n - 1; i++) {
+    const A = k[i], B = k[i + 1];
+    if (t < B[0]) {
+      if (B[0] === A[0] || (A[1] === B[1] && A[2] === B[2])) return [A[1], A[2]];
+      let p = (t - A[0]) / (B[0] - A[0]);
+      const P = k[i - 1], N = k[i + 2];
+      const repAv = !P || P[0] === A[0] || (P[1] === A[1] && P[2] === A[2]);
+      const repAp = !N || N[0] === B[0] || (N[1] === B[1] && N[2] === B[2]);
+      if (repAv && repAp) p = p * p * (3 - 2 * p);
+      else if (repAv) p = p * p * (2 - p);
+      else if (repAp) { const q = 1 - p; p = 1 - q * q * (2 - q); }
+      return [A[1] + (B[1] - A[1]) * p, A[2] + (B[2] - A[2]) * p];
+    }
+  }
+  return [k[n - 1][1], k[n - 1][2]];
+}
+const dansFenetre = (f, t) => (f || []).some(([a, b]) => t >= a && t <= b);
+function hauteurSaut(a, t) {
+  let h = 0;
+  (a.sauts || []).forEach(s => { const ts = s[0], amp = s[1] || 1, d = t - ts; if (d >= 0 && d <= 0.42) h = Math.max(h, amp * Math.sin(Math.PI * d / 0.42)); });
+  return h;
+}
+function bouge(a, t) { const p = posA(a, t), q = posA(a, Math.max(0, t - 0.06)); return Math.hypot(p[0] - q[0], p[1] - q[1]) > 0.02; }
+
+function posCible(R, c, t) {
+  if (c == null) return null;
+  if (Array.isArray(c)) return { p: c, act: null };
+  if (c.startsWith("panier")) return { p: R.T.paniers[c], pan: true };
+  const [id, main] = c.split(":");
+  const o = R.acts[id]; if (!o) return null;
+  const p = posA(o.a, t);
+  return { p: [p[0] + (main === "g" ? -0.36 : 0.36), p[1] + 0.26], act: o.a };
+}
+function etatBalle(R, b, t) {
+  if (b.fixe) {
+    const a = R.acts[b.fixe].a, p = posA(a, t);
+    const drib = bouge(a, t) || dansFenetre(a.dribble, t);
+    return { p: [p[0] + (b.main ? -0.36 : 0.36), p[1] + 0.26], h: drib ? 0.22 * Math.abs(Math.sin(t * 9 + (b.main ? 1.6 : 0))) : 0 };
+  }
+  const tr = b.tr;
+  let i = tr.length - 1;
+  for (let j = 0; j < tr.length - 1; j++) if (t < tr[j + 1][0]) { i = j; break; }
+  if (t < tr[0][0]) i = 0;
+  const A = tr[i][1], B = tr[i + 1] ? tr[i + 1][1] : undefined;
+  const ca = posCible(R, A, t);
+  if (!ca) return null;
+  const same = B === undefined || B === null || (typeof A === "string" && A === B) || (Array.isArray(A) && Array.isArray(B) && A[0] === B[0] && A[1] === B[1]);
+  if (same || t < tr[0][0]) {
+    const drib = ca.act && (bouge(ca.act, t) || dansFenetre(ca.act.dribble, t));
+    return { p: ca.p, h: drib ? 0.22 * Math.abs(Math.sin(t * 9)) : 0, pan: ca.pan };
+  }
+  const cb = posCible(R, B, t);
+  if (!cb) return { p: ca.p, h: 0 };
+  const p = Math.min(1, Math.max(0, (t - tr[i][0]) / (tr[i + 1][0] - tr[i][0])));
+  const arc = cb.pan ? 1.5 : ca.pan ? 0.6 : 0.3;
+  return { p: [ca.p[0] + (cb.p[0] - ca.p[0]) * p, ca.p[1] + (cb.p[1] - ca.p[1]) * p], h: arc * Math.sin(Math.PI * p) };
+}
+
+/* ---------- dessin d'une image ---------- */
+function dessiner(R, t) {
+  const an = R.an;
+  if (an.scene === "souffle") return dessinerSouffle(R, t);
+  // fondu aux coupes
+  const cuts = [0, an.duree, ...(an.coupes || [])];
+  let op = 1; cuts.forEach(c => { op = Math.min(op, Math.abs(t - c) / 0.3); });
+  R.dyn.setAttribute("opacity", Math.max(0, Math.min(1, op)).toFixed(3));
+  Object.values(R.acts).forEach(o => {
+    const p = posA(o.a, t), h = hauteurSaut(o.a, t);
+    o.g.setAttribute("transform", `translate(${p[0].toFixed(3)} ${p[1].toFixed(3)})`);
+    o.corps.setAttribute("transform", h ? `translate(0 ${(-0.3 * h).toFixed(3)}) scale(${(1 + 0.28 * h).toFixed(3)})` : "");
+    o.ombre.setAttribute("opacity", (0.28 - 0.12 * Math.min(h, 1.5)).toFixed(3));
+    if (o.souffle) {
+      const on = dansFenetre(o.a.souffle, t);
+      const f = on ? 0.5 - 0.5 * Math.cos(2 * Math.PI * (t % 2) / 2) : 0;
+      o.souffle.setAttribute("r", (0.55 + 0.55 * f).toFixed(3));
+      o.souffle.setAttribute("opacity", on ? (0.75 - 0.5 * f).toFixed(3) : "0");
+    }
+    if (o.corde) {
+      const on = dansFenetre(o.a.corde, t);
+      o.corde.setAttribute("opacity", on ? "1" : "0");
+      o.corde.setAttribute("transform", `rotate(${((t * 1000) % 360).toFixed(1)})`);
+    }
+  });
+  R.balles.forEach(b => {
+    const e = etatBalle(R, b, t);
+    if (!e) { b.g.setAttribute("opacity", "0"); return; }
+    b.g.setAttribute("opacity", "1");
+    b.ombre.setAttribute("transform", `translate(${e.p[0].toFixed(3)} ${(e.p[1] + 0.1).toFixed(3)})`);
+    b.ombre.setAttribute("opacity", (0.3 - 0.15 * Math.min(e.h, 1)).toFixed(3));
+    b.corps.setAttribute("transform", `translate(${e.p[0].toFixed(3)} ${(e.p[1] - e.h * 0.9).toFixed(3)}) scale(${(1 + e.h * 0.4).toFixed(3)})`);
+  });
+  // éclat du filet quand le ballon arrive au panier
+  Object.keys(R.paniers).forEach(k => {
+    let f = -1;
+    (an.ballons || []).forEach(tr => tr.forEach(([kt, c]) => { if (c === k && t >= kt && t < kt + 0.5) f = (t - kt) / 0.5; }));
+    const c = R.paniers[k];
+    c.setAttribute("opacity", f < 0 ? "0" : (1 - f).toFixed(3));
+    c.setAttribute("r", f < 0 ? ".25" : (0.25 + 0.7 * f).toFixed(3));
+  });
+}
+
+/* ---------- scène respiration ---------- */
+function construireSouffle(an, svg, R) {
+  let t = 0; an.debuts = an.phases.map(p => { const d = t; t += p.dur; return d; });
+  an.duree = t;
+  if (!an.etapes) { an.etapes = []; an.phases.forEach((p, i) => { const l = an.etapes[an.etapes.length - 1]; if (!l || l[1] !== p.txt) an.etapes.push([an.debuts[i], p.txt]); }); }
+  svg.setAttribute("viewBox", "0 0 15 10");
+  const pose = an.phases.some(p => p.pose);
+  R.cy = pose ? 3.9 : 4.9; R.base = pose ? 1.05 : 1.5;
+  svg.innerHTML = `<rect class="s-fond" x="0" y="0" width="15" height="10"/>
+    <circle class="s-guide" cx="7.5" cy="${R.cy}" r="${R.base * 1.85}"/>
+    <circle class="s-guide s-guide2" cx="7.5" cy="${R.cy}" r="${R.base}"/>
+    <circle id="s-bulle" class="s-bulle" cx="7.5" cy="${R.cy}" r="${R.base}"/>
+    <text id="s-compte" class="s-compte" x="7.5" y="${R.cy}">5</text>
+    ${pose ? `<line class="s-sol" x1="2.5" y1="8.9" x2="12.5" y2="8.9"/><g id="s-pose"></g>` : ""}
+    ${an.pouls ? `<g transform="translate(12.4 1.3)"><path id="s-coeur" class="s-coeur" d="M0 .5C-.9-.1-.7-.8-.25-.8C-.05-.8 0-.6 0-.5C0-.6.05-.8.25-.8C.7-.8.9-.1 0 .5Z"/><text id="s-bpm" class="s-bpm" x=".55" y="0">168</text></g>` : ""}`;
+  R.bulle = svg.querySelector("#s-bulle"); R.compte = svg.querySelector("#s-compte");
+  R.pose = svg.querySelector("#s-pose"); R.coeur = svg.querySelector("#s-coeur"); R.bpm = svg.querySelector("#s-bpm");
+  R.poseCour = null;
+  return R;
+}
+const POSES = {
+  planche: `<circle class="s-fig" cx="4" cy="7.35" r=".38" fill="currentColor"/><path class="s-fig" d="M4.6 7.6L10.9 8.5M5.1 7.7V8.85H6.3"/>`,
+  laterale: `<circle class="s-fig" cx="4.1" cy="6.5" r=".38" fill="currentColor"/><path class="s-fig" d="M4.7 6.9L10.9 8.6M5 7V8.85"/>`
+};
+function dessinerSouffle(R, t) {
+  const an = R.an; let i = an.phases.length - 1;
+  for (let j = 0; j < an.phases.length; j++) if (t < an.debuts[j] + an.phases[j].dur) { i = j; break; }
+  const ph = an.phases[i], p = Math.min(1, (t - an.debuts[i]) / ph.dur), e = p * p * (3 - 2 * p);
+  let s = ph.v === "in" ? 1 + 0.85 * e : ph.v === "out" ? 1.85 - 0.85 * e : 1.35 + 0.12 * Math.sin(t * Math.PI / 2);
+  R.bulle.setAttribute("r", (R.base * s).toFixed(3));
+  R.compte.textContent = Math.max(1, Math.ceil(ph.dur - (t - an.debuts[i])));
+  if (R.pose && R.poseCour !== ph.pose) { R.pose.innerHTML = POSES[ph.pose] || ""; R.poseCour = ph.pose; }
+  if (R.pose) R.pose.setAttribute("transform", `translate(0 ${ph.v === "in" ? (-0.05 * e).toFixed(3) : (-0.05 * (1 - e)).toFixed(3)})`);
+  if (an.pouls) {
+    const b = Math.round(an.pouls[0] + (an.pouls[1] - an.pouls[0]) * (t / an.duree));
+    R.bpm.textContent = b + " bpm";
+    R.bpm.classList.toggle("ok", b < 120);
+    const f = (t * b / 60) % 1;
+    R.coeur.setAttribute("transform", `scale(${(1 + 0.18 * Math.max(0, Math.sin(f * Math.PI * 2))).toFixed(3)})`);
+  }
+}
+
+
+/* =====================================================================
+   LECTEUR : interface (fenêtre, commandes, étapes)
+   ===================================================================== */
+
+const INFOS_EXOS = {};
+Object.keys(BANQUE).forEach(th => BANQUE[th].forEach(e => { INFOS_EXOS[e.n] = { e, th }; }));
+
+const escAttr = s => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+const btnAnim = (nom, petit) => ANIMS[nom]
+  ? `<button class="btn-anim${petit ? " petit" : ""}" data-anim="${escAttr(nom)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>${petit ? "Voir" : "Voir l'animation"}</button>`
+  : "";
+
+const moinsDeMouvement = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function ouvrirAnim(nom, declencheur) {
+  const an = ANIMS[nom]; if (!an) return;
+  const info = INFOS_EXOS[nom];
+  LECT.focusAvant = declencheur || document.activeElement;
+  LECT.an = an;
+  LECT.R = construireScene(an);
+  LECT.etapeIdx = -1; LECT.tabIdx = -1;
+  document.getElementById("lect-theme").textContent = info ? NOMS_THEMES[info.th] + " · " + info.e.t + " min" : "";
+  document.getElementById("lect-titre").textContent = nom;
+  document.getElementById("lect-desc").textContent = info ? info.e.d : "";
+  const coach = document.getElementById("lect-coach");
+  coach.hidden = !(info && info.e.a);
+  coach.innerHTML = info && info.e.a ? `<b>Coach :</b> ${info.e.a}` : "";
+  document.getElementById("lect-legende-roles").hidden = !!an.scene;
+  document.getElementById("lect-accel").hidden = !!an.scene;
+  document.getElementById("lect-tableau").hidden = !an.tableau;
+  document.getElementById("lect-etapes").innerHTML = an.etapes.map((e, i) =>
+    `<li><button type="button" data-etape="${i}"><span class="num">${i + 1}</span>${e[1]}</button></li>`).join("");
+  const box = document.getElementById("lecteur");
+  box.hidden = false;
+  document.body.classList.add("lecteur-ouvert");
+  requestAnimationFrame(() => box.classList.add("visible"));
+  LECT.vit = 1; majVitesse();
+  allerA(moinsDeMouvement ? Math.min(an.duree * 0.45, 3) : 0.001);
+  if (moinsDeMouvement) pause(); else lecture();
+  document.getElementById("lect-fermer").focus();
+}
+
+function fermerAnim() {
+  pause();
+  const box = document.getElementById("lecteur");
+  box.classList.remove("visible");
+  document.body.classList.remove("lecteur-ouvert");
+  setTimeout(() => { box.hidden = true; document.getElementById("lect-svg").innerHTML = ""; }, 220);
+  if (LECT.focusAvant && LECT.focusAvant.focus) LECT.focusAvant.focus();
+}
+
+function boucle(ts) {
+  if (!LECT.joue) return;
+  const dt = LECT.last ? Math.min(0.1, (ts - LECT.last) / 1000) : 0;
+  LECT.last = ts;
+  LECT.t = (LECT.t + dt * LECT.vit) % LECT.an.duree;
+  rendreImage();
+  LECT.raf = requestAnimationFrame(boucle);
+}
+function lecture() {
+  LECT.joue = true; LECT.last = 0;
+  cancelAnimationFrame(LECT.raf); LECT.raf = requestAnimationFrame(boucle);
+  const b = document.getElementById("lect-play");
+  b.setAttribute("aria-label", "Mettre en pause"); b.classList.add("en-lecture");
+}
+function pause() {
+  LECT.joue = false; cancelAnimationFrame(LECT.raf);
+  const b = document.getElementById("lect-play");
+  b.setAttribute("aria-label", "Lire l'animation"); b.classList.remove("en-lecture");
+}
+function allerA(t) { LECT.t = Math.max(0, Math.min(LECT.an.duree - 0.001, t)); rendreImage(); }
+
+function rendreImage() {
+  const an = LECT.an, t = LECT.t;
+  dessiner(LECT.R, t);
+  // étape courante
+  let idx = 0; an.etapes.forEach((e, i) => { if (t >= e[0]) idx = i; });
+  if (idx !== LECT.etapeIdx) {
+    LECT.etapeIdx = idx;
+    const leg = document.getElementById("lect-legende");
+    leg.textContent = an.etapes[idx][1];
+    leg.classList.remove("anime"); void leg.offsetWidth; leg.classList.add("anime");
+    document.querySelectorAll("#lect-etapes button").forEach((b, i) => {
+      b.classList.toggle("actif", i === idx);
+      if (i === idx) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+    });
+  }
+  if (an.tableau) {
+    let ti = 0; an.tableau.forEach((e, i) => { if (t >= e[0]) ti = i; });
+    if (ti !== LECT.tabIdx) { LECT.tabIdx = ti; document.getElementById("lect-tableau").textContent = an.tableau[ti][1]; }
+  }
+  const r = document.getElementById("lect-temps");
+  r.value = Math.round(t / an.duree * 1000);
+  r.setAttribute("aria-valuetext", `${t.toFixed(1)} s sur ${an.duree.toFixed(1)} s`);
+  document.getElementById("lect-barre").style.transform = `scaleX(${(t / an.duree).toFixed(4)})`;
+}
+
+function majVitesse() {
+  const b = document.getElementById("lect-vitesse");
+  b.textContent = LECT.vit === 1 ? "Vitesse normale" : "Ralenti ×0,5";
+  b.setAttribute("aria-pressed", LECT.vit !== 1 ? "true" : "false");
+}
+
+/* ---------- événements ---------- */
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-anim]");
+  if (b) { ev.stopPropagation(); ouvrirAnim(b.dataset.anim, b); return; }
+  const e = ev.target.closest("[data-etape]");
+  if (e && LECT.an) { allerA(LECT.an.etapes[+e.dataset.etape][0] + 0.01); if (!LECT.joue) rendreImage(); }
+});
+document.getElementById("lect-fermer").onclick = fermerAnim;
+document.getElementById("lecteur").addEventListener("click", ev => { if (ev.target.id === "lecteur") fermerAnim(); });
+document.getElementById("lect-play").onclick = () => LECT.joue ? pause() : lecture();
+document.getElementById("lect-rejouer").onclick = () => { allerA(0.001); lecture(); };
+document.getElementById("lect-vitesse").onclick = () => { LECT.vit = LECT.vit === 1 ? 0.5 : 1; majVitesse(); };
+document.getElementById("lect-temps").addEventListener("input", ev => { allerA(ev.target.value / 1000 * LECT.an.duree); });
+document.addEventListener("keydown", ev => {
+  const box = document.getElementById("lecteur");
+  if (box.hidden) return;
+  if (ev.key === "Escape") { ev.preventDefault(); fermerAnim(); return; }
+  if (ev.key === " " && !ev.target.closest("button, input")) { ev.preventDefault(); LECT.joue ? pause() : lecture(); }
+  if (ev.key === "Tab") {
+    const f = [...box.querySelectorAll("button, input")].filter(x => !x.closest("[hidden]"));
+    const premier = f[0], dernier = f[f.length - 1];
+    if (ev.shiftKey && document.activeElement === premier) { ev.preventDefault(); dernier.focus(); }
+    else if (!ev.shiftKey && document.activeElement === dernier) { ev.preventDefault(); premier.focus(); }
+  }
+});
+document.addEventListener("visibilitychange", () => { if (document.hidden && LECT.joue) pause(); });
+
+/* =====================================================================
+   BIBLIOTHÈQUE : tous les exercices, par thème
+   ===================================================================== */
+function rendreBibli() {
+  const c = document.getElementById("contenu-exos");
+  const ordre = ["echauffement", "pliometrie", "course", "respiration", "tir", "collectif", "poste", "retour"];
+  const profil = PROFILS_AGE[etat.cat];
+  let h = `<p class="bibli-intro">Les ${Object.keys(INFOS_EXOS).length} exercices de l'app, chacun avec son animation. Touche un exercice pour le voir sur le terrain.</p>`;
+  ordre.forEach(th => {
+    h += `<section class="bibli-groupe" aria-labelledby="bg-${th}"><h2 id="bg-${th}">${NOMS_THEMES[th]}</h2><ul>`;
+    BANQUE[th].forEach(e => {
+      const horsCat = th === "pliometrie" && !nivPlioOk(e, profil);
+      h += `<li><button class="bibli-ligne" data-anim="${escAttr(e.n)}">
+        <span class="bibli-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+        <span class="bibli-nom">${e.n}${horsCat ? `<small>Pas au programme ${etat.cat}</small>` : ""}</span>
+        <span class="bibli-duree">${e.t} min</span></button></li>`;
+    });
+    h += `</ul></section>`;
+  });
+  c.innerHTML = h;
+}
+
+/* ---------- démarrage ---------- */
+(async function(){
+  await charger();
+  rendreReglages();
+  rendreSemaine();
+  if (etat.semaine) montrer("semaine"); else montrer("reglages");
+})();
+</script>
+</body>
+</html>
